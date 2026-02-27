@@ -1,0 +1,13 @@
+# Core dependencies
+anthropic
+claude-agent-sdk
+mcp
+requests
+python-dotenv
+
+# Web backend
+fastapi
+uvicorn[standard]
+
+# Deploy
+paramiko
