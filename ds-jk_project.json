@@ -1,0 +1,7 @@
+{
+  "project_name": "ds-jk",
+  "db_name": "ds_jk",
+  "mysql_host": "54.151.169.39",
+  "mysql_port": 3306,
+  "mysql_user": "root"
+}

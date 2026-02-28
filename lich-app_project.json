@@ -1,0 +1,7 @@
+{
+  "project_name": "lich-app",
+  "db_name": "lich_app",
+  "mysql_host": "54.151.169.39",
+  "mysql_port": 3306,
+  "mysql_user": "root"
+}

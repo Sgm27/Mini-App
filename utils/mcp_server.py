@@ -1,109 +1,148 @@
 """
-External MCP server for the submit_project tool.
+MySQL MCP server with 3 tools: list_tables, describe, execute.
 
-Runs as a stdio subprocess to avoid the in-process SDK bug
-(CLIConnectionError: ProcessTransport is not ready for writing).
+Runs as a stdio subprocess spawned by main.py.
 
-Environment variables (set by main.py before each query):
-  SUBMIT_CWD      — workspace directory to deploy
-  SUBMIT_BASE_DIR — project root (where submit_results.json lives)
+Environment variables (set by main.py):
+  MYSQL_HOST     — MySQL host
+  MYSQL_PORT     — MySQL port
+  MYSQL_USER     — MySQL user
+  MYSQL_PASSWORD — MySQL password
+  MYSQL_DATABASE — Active project database name
 """
 
 import asyncio
 import json
 import os
-import sys
 
+import mysql.connector
+from mysql.connector import Error
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import CallToolResult, TextContent, Tool
 
-# Add parent dir so we can import utils.deploy
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.deploy import deploy_project
+server = Server("mysql_mcp")
 
-server = Server("submit_answer")
 
-TOOL_DESCRIPTION = (
-    "MANDATORY: You MUST call this tool as the FINAL step after completing any of these actions: "
-    "(1) Finished building a new app (all code written, build passes, app is functional), "
-    "(2) Modified/updated any source code files in the project (bug fixes, new features, refactors, style changes). "
-    "This tool builds and deploys the project so the user can preview their app live. "
-    "Call it ONCE at the very end of your work, after `npm run build` succeeds. Never skip this step."
-)
+def _get_connection():
+    return mysql.connector.connect(
+        host=os.environ.get("MYSQL_HOST", "localhost"),
+        port=int(os.environ.get("MYSQL_PORT", "3306")),
+        user=os.environ.get("MYSQL_USER", "root"),
+        password=os.environ.get("MYSQL_PASSWORD", ""),
+        database=os.environ.get("MYSQL_DATABASE", ""),
+    )
+
+
+def _escape_identifier(name: str) -> str:
+    if "`" in name:
+        raise ValueError("Invalid identifier")
+    return f"`{name}`"
 
 
 @server.list_tools()
 async def list_tools():
     return [
         Tool(
-            name="submit_project",
-            description=TOOL_DESCRIPTION,
+            name="list_tables",
+            description="List all tables in the current MySQL database.",
             inputSchema={"type": "object", "properties": {}, "required": []},
-        )
+        ),
+        Tool(
+            name="describe",
+            description="Show full column info (Field, Type, Null, Key, Default, Extra, Comment) for a table.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "table": {"type": "string", "description": "Table name"},
+                },
+                "required": ["table"],
+            },
+        ),
+        Tool(
+            name="execute",
+            description="Execute any SQL statement (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, etc.). Returns rows for SELECT or affected_rows for write statements.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "sql": {"type": "string", "description": "SQL statement to execute"},
+                },
+                "required": ["sql"],
+            },
+        ),
     ]
 
 
 @server.call_tool()
 async def call_tool(name: str, arguments: dict):
-    if name != "submit_project":
+    try:
+        conn = _get_connection()
+    except Error as e:
         return CallToolResult(
-            content=[TextContent(type="text", text=f"Unknown tool: {name}")],
+            content=[TextContent(type="text", text=f"MySQL connection error: {e}")],
             isError=True,
         )
-
-    from datetime import datetime, timezone
-
-    cwd = os.environ.get("SUBMIT_CWD", "")
-    base_dir = os.environ.get("SUBMIT_BASE_DIR", "")
-
-    if not cwd or not base_dir:
-        return CallToolResult(
-            content=[TextContent(type="text", text="SUBMIT_CWD or SUBMIT_BASE_DIR not set")],
-            isError=True,
-        )
-
-    timestamp = datetime.now(timezone.utc).isoformat()
-    result_file = os.path.join(base_dir, "submit_results.json")
-
-    if os.path.exists(result_file):
-        with open(result_file, "r") as f:
-            results = json.load(f)
-    else:
-        results = []
 
     try:
-        info = deploy_project(cwd)
-        entry = {
-            "timestamp": timestamp,
-            "status": "success",
-            "url": info.url,
-            "subdomain": info.subdomain,
-            "vps_path": info.vps_path,
-            "workspace": cwd,
-        }
-        results.append(entry)
-        with open(result_file, "w") as f:
-            json.dump(results, f, indent=2, ensure_ascii=False)
+        if name == "list_tables":
+            cursor = conn.cursor()
+            cursor.execute("SHOW TABLES")
+            tables = [row[0] for row in cursor.fetchall()]
+            return CallToolResult(
+                content=[TextContent(type="text", text=json.dumps(tables, ensure_ascii=False))]
+            )
 
-        return CallToolResult(
-            content=[TextContent(type="text", text=json.dumps(entry))]
-        )
-    except RuntimeError as e:
-        entry = {
-            "timestamp": timestamp,
-            "status": "failed",
-            "error": str(e),
-            "workspace": cwd,
-        }
-        results.append(entry)
-        with open(result_file, "w") as f:
-            json.dump(results, f, indent=2, ensure_ascii=False)
+        elif name == "describe":
+            table = arguments.get("table", "")
+            if not table:
+                return CallToolResult(
+                    content=[TextContent(type="text", text="Missing required parameter: table")],
+                    isError=True,
+                )
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(f"SHOW FULL COLUMNS FROM {_escape_identifier(table)}")
+            rows = cursor.fetchall()
+            return CallToolResult(
+                content=[TextContent(type="text", text=json.dumps(rows, default=str, ensure_ascii=False))]
+            )
 
+        elif name == "execute":
+            sql = arguments.get("sql", "").strip()
+            if not sql:
+                return CallToolResult(
+                    content=[TextContent(type="text", text="Missing required parameter: sql")],
+                    isError=True,
+                )
+
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute(sql)
+
+            if sql.lower().startswith("select") or sql.lower().startswith("show") or sql.lower().startswith("explain"):
+                rows = cursor.fetchall()
+                return CallToolResult(
+                    content=[TextContent(type="text", text=json.dumps(rows, default=str, ensure_ascii=False))]
+                )
+            else:
+                conn.commit()
+                result = {"affected_rows": cursor.rowcount, "last_row_id": cursor.lastrowid}
+                return CallToolResult(
+                    content=[TextContent(type="text", text=json.dumps(result))]
+                )
+
+        else:
+            return CallToolResult(
+                content=[TextContent(type="text", text=f"Unknown tool: {name}")],
+                isError=True,
+            )
+
+    except Error as e:
         return CallToolResult(
-            content=[TextContent(type="text", text=f"Deploy failed: {e}")],
+            content=[TextContent(type="text", text=f"MySQL error: {e}")],
             isError=True,
         )
+    finally:
+        if conn.is_connected():
+            conn.close()
 
 
 async def main():
