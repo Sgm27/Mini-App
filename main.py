@@ -147,12 +147,38 @@ def handle_new_project(project_name: str):
     print(f"\nChat is now pointed at the new project. Start building!\n")
 
 
+def _update_api_js(project_dir: str, function_url: str) -> bool:
+    """Find api.js in the project frontend and update API_URL to the Lambda function URL."""
+    # Remove trailing slash from function URL
+    url = function_url.rstrip("/")
+
+    api_js_path = os.path.join(project_dir, "frontend", "js", "api.js")
+    if not os.path.exists(api_js_path):
+        return False
+
+    with open(api_js_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    import re
+    new_content = re.sub(
+        r"const\s+API_URL\s*=\s*['\"].*?['\"]",
+        f"const API_URL = '{url}'",
+        content,
+    )
+
+    if new_content != content:
+        with open(api_js_path, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        return True
+    return False
+
+
 def handle_deploy():
-    """Build and deploy the current project to VPS with a random subdomain."""
+    """Deploy the backend to AWS Lambda and update frontend api.js."""
     def on_step(step, total, msg):
         print(f"  [{step}/{total}] {msg}")
 
-    print(f"\nDeploying project from '{CWD}'...")
+    print(f"\nDeploying backend to AWS Lambda from '{CWD}'...")
     try:
         info = deploy_project(CWD, on_step=on_step)
     except RuntimeError as e:
@@ -160,9 +186,17 @@ def handle_deploy():
         return
 
     print(f"\nDeploy successful!")
-    print(f"  URL      : {info.url}")
-    print(f"  Subdomain: {info.subdomain}")
-    print(f"  VPS path : {info.vps_path}\n")
+    print(f"  Function : {info.function_name}")
+    print(f"  URL      : {info.function_url}")
+    print(f"  Region   : {info.region}")
+
+    # Update api.js in the frontend
+    if _update_api_js(CWD, info.function_url):
+        print(f"  api.js   : Updated API_URL → {info.function_url}")
+    else:
+        print(f"  api.js   : Not found at {CWD}/frontend/js/api.js (skipped)")
+
+    print()
 
 
 async def chat(prompt: str):

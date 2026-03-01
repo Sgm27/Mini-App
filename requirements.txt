@@ -12,5 +12,5 @@ uvicorn[standard]
 # MySQL
 mysql-connector-python
 
-# Deploy
-paramiko
+# AWS (Lambda deploy)
+boto3
