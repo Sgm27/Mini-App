@@ -1,7 +1,0 @@
-{
-  "project_name": "ds-muoi",
-  "db_name": "ds_muoi",
-  "mysql_host": "54.151.169.39",
-  "mysql_port": 3306,
-  "mysql_user": "root"
-}

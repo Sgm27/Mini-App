@@ -28,6 +28,7 @@ run the app, debug via logs, and leave a working end-to-end product in the works
     - api/
       - deps.py                # shared dependencies (DB session, auth, etc.)
       - routes/                # FastAPI routers (one file per feature)
+        - upload.py            # PRE-BUILT: S3 presigned-url endpoint (POST /api/upload/presigned-url). DO NOT recreate.
     - core/config.py           # Settings (pydantic-settings, env aware)
     - db/
       - session.py             # SQLAlchemy engine/session (MySQL, pool_pre_ping)
@@ -121,6 +122,12 @@ Respect this layout—avoid renames unless required to fix a bug.
     - **NEVER** use Python code (pymysql, sqlalchemy CLI, scripts) or Bash commands (`mysql` CLI, shell pipes) to directly query, modify, or inspect the database.
     - This applies to ALL database operations: creating tables, running migrations, seeding data, checking schema, querying data, debugging, etc.
     - Write SQL migration files to `database/` as before, but **execute** them via `mcp__mysql__execute`, NOT via `mysql` CLI or Python scripts.
+- **File/Binary storage — S3 ONLY (CRITICAL):**
+  - **ALL binary files** (images, PDFs, audio, video, documents, etc.) **MUST be stored in S3**, never in the local filesystem or database BLOBs.
+  - A presigned-url upload endpoint is **already provided** at `POST /api/upload/presigned-url`. DO NOT recreate or duplicate it.
+  - **Frontend upload flow**: call `api.post('/api/upload/presigned-url', { filename })` to get `{ upload_url, file_url, key }`, then `PUT` the raw file to `upload_url`, and save `file_url` (the public S3 URL) in the database as a text field.
+  - Database columns for files should store the **S3 URL string** (e.g., `image_url VARCHAR(500)`), NOT binary data.
+  - The `S3_BUCKET_NAME` setting is already in `core/config.py`; ensure `.env.example` has it listed.
 - Background tasks: prefer FastAPI `BackgroundTasks`; avoid heavyweight daemons.
 - Tests: pytest + httpx `TestClient`; cover happy path + error cases for new endpoints/services.
 - Error handling: raise HTTPException with clear messages; guard against missing data; wrap commit/rollback properly.

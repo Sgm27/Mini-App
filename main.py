@@ -335,6 +335,11 @@ async def main():
         print("\nClaude: ", end="", flush=True)
         await chat(user_input)
 
+        # Auto-deploy after AI finishes building
+        if CURRENT_PROJECT:
+            print("\n🚀 Auto-deploying...")
+            handle_deploy()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

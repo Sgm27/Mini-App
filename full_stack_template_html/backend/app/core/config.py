@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     mysql_password: Annotated[str, Field(default="")]
     mysql_database: Annotated[str, Field(default="mydb")]
 
+    s3_bucket_name: Annotated[str, Field(default="")]
+    s3_region: Annotated[str, Field(default="ap-southeast-1")]
+
     @computed_field
     @property
     def database_url(self) -> str:

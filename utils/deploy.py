@@ -54,24 +54,33 @@ def _get_session() -> boto3.Session:
 
 def _get_or_create_role(session: boto3.Session) -> str:
     iam = session.client("iam")
+
+    REQUIRED_POLICIES = [
+        "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+        "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+    ]
+
     try:
         resp = iam.get_role(RoleName=ROLE_NAME)
-        return resp["Role"]["Arn"]
+        role_arn = resp["Role"]["Arn"]
     except iam.exceptions.NoSuchEntityException:
-        pass
+        resp = iam.create_role(
+            RoleName=ROLE_NAME,
+            AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
+            Description="Basic execution role for Lambda functions",
+        )
+        role_arn = resp["Role"]["Arn"]
+        time.sleep(10)
 
-    resp = iam.create_role(
-        RoleName=ROLE_NAME,
-        AssumeRolePolicyDocument=json.dumps(TRUST_POLICY),
-        Description="Basic execution role for Lambda functions",
-    )
-    role_arn = resp["Role"]["Arn"]
+    # Always ensure required policies are attached
+    attached = {
+        p["PolicyArn"]
+        for p in iam.list_attached_role_policies(RoleName=ROLE_NAME)["AttachedPolicies"]
+    }
+    for policy_arn in REQUIRED_POLICIES:
+        if policy_arn not in attached:
+            iam.attach_role_policy(RoleName=ROLE_NAME, PolicyArn=policy_arn)
 
-    iam.attach_role_policy(
-        RoleName=ROLE_NAME,
-        PolicyArn="arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-    )
-    time.sleep(10)
     return role_arn
 
 

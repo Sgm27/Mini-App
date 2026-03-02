@@ -1,0 +1,8 @@
+{
+  "project_name": "ds_save_hehe",
+  "db_name": "ds_save_hehe",
+  "s3_bucket_name": "ds-save-hehe-270717776915",
+  "mysql_host": "54.151.169.39",
+  "mysql_port": 3306,
+  "mysql_user": "root"
+}
