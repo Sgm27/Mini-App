@@ -25,7 +25,7 @@ from claude_agent_sdk.types import (
     ToolResultBlock,
 )
 
-from utils import APP_BUILDER_SYSTEM_PROMPT, create_project, deploy_project
+from utils import APP_BUILDER_SYSTEM_PROMPT, create_project, deploy_project, merge_frontend
 
 load_dotenv()
 
@@ -195,6 +195,14 @@ def handle_deploy():
         print(f"  api.js   : Updated API_URL → {info.function_url}")
     else:
         print(f"  api.js   : Not found at {CWD}/frontend/js/api.js (skipped)")
+
+    # Merge frontend into a single HTML file
+    merged_dir = os.path.join(BASE_DIR, "merged_index")
+    merged_path = merge_frontend(CWD, CURRENT_PROJECT or "default", merged_dir)
+    if merged_path:
+        print(f"  Merged   : {merged_path}")
+    else:
+        print(f"  Merged   : Skipped (no frontend/index.html)")
 
     print()
 

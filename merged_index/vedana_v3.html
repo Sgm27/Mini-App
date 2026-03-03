@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Ứng dụng báo cáo dọn phòng khách sạn">
+    <meta name="theme-color" content="#4A90FF">
+    <title>Báo cáo dọn phòng</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+/* =========================================================
+   HOUSEKEEPING QR REPORT — DESIGN SYSTEM
+   Font: Nunito | Palette: Blue (#4A90FF) + Clean White
+   ========================================================= */
+
+/* ---------- RESET & BASE ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    /* Colors */
+    --c-primary:      #4A90FF;
+    --c-primary-dark: #2E75E8;
+    --c-primary-lite: #E8F4FF;
+    --c-bg-start:     #F8F9FB;
+    --c-bg-end:       #FFFFFF;
+    --c-white:        #FFFFFF;
+    --c-text-h:       #111111;
+    --c-text-b:       #333333;
+    --c-text-cap:     #6B7280;
+    --c-border:       #E5E9F0;
+    --c-danger:       #FF4D4D;
+    --c-success:      #22C55E;
+    --c-warn:         #F59E0B;
+
+    /* Radii */
+    --r-card-lg:  20px;
+    --r-card-md:  16px;
+    --r-card-sm:  12px;
+    --r-pill:     50px;
+    --r-btn:      26px;
+
+    /* Spacing */
+    --px: 16px;
+    --section-gap: 24px;
+    --card-gap: 16px;
+
+    /* Shadow */
+    --shadow-card: 0 8px 24px rgba(74,144,255,0.12);
+    --shadow-btn:  0 4px 16px rgba(74,144,255,0.35);
+    --shadow-sm:   0 2px 8px rgba(0,0,0,0.08);
+
+    /* Typography */
+    --ff: 'Nunito', system-ui, sans-serif;
+}
+
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
+body {
+    font-family: var(--ff);
+    background: linear-gradient(160deg, var(--c-bg-start) 0%, var(--c-bg-end) 100%);
+    min-height: 100dvh;
+    min-height: 100vh;
+    color: var(--c-text-b);
+    overflow: hidden;
+    position: relative;
+}
+
+/* ---------- SCREEN SYSTEM ---------- */
+.screen {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    background: linear-gradient(160deg, var(--c-bg-start) 0%, var(--c-bg-end) 100%);
+    transform: translateX(100%);
+    transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+    will-change: transform;
+}
+
+.screen--active {
+    transform: translateX(0);
+    z-index: 2;
+}
+
+.screen--exit {
+    transform: translateX(-30%);
+    z-index: 1;
+    transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.screen__inner {
+    height: 100%;
+    padding: 0 var(--px);
+    padding-top: max(env(safe-area-inset-top), 16px);
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--card-gap);
+}
+
+.screen__inner--scrollable {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: 100px;
+}
+
+.screen__inner--center {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+}
+
+/* ---------- TYPOGRAPHY ---------- */
+.screen-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--c-text-h);
+    line-height: 1.2;
+}
+
+.screen-subtitle {
+    font-size: 14px;
+    color: var(--c-text-cap);
+    line-height: 1.6;
+    margin-top: 4px;
+}
+
+.section-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--c-text-h);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 2px;
+    margin-top: 6px;
+}
+
+/* ---------- CARDS ---------- */
+.card {
+    border-radius: var(--r-card-lg);
+    padding: 18px;
+    transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.card:active { transform: scale(0.99); }
+
+.card--main {
+    background: var(--c-primary-lite);
+    box-shadow: var(--shadow-card);
+    border: 1px solid rgba(74,144,255,0.12);
+}
+
+.card--secondary {
+    background: var(--c-white);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--c-border);
+}
+
+/* ---------- BUTTONS ---------- */
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 52px;
+    border-radius: var(--r-btn);
+    border: none;
+    cursor: pointer;
+    font-family: var(--ff);
+    font-size: 16px;
+    font-weight: 700;
+    transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn--primary {
+    background: var(--c-primary);
+    color: var(--c-white);
+    box-shadow: var(--shadow-btn);
+}
+
+.btn--primary:active { background: var(--c-primary-dark); }
+
+.btn--cta { font-size: 17px; }
+
+.btn-back {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--c-white);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    color: var(--c-text-h);
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 150ms ease;
+}
+.btn-back:active { transform: scale(0.93); }
+
+.btn-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 150ms ease, background 150ms ease;
+    flex-shrink: 0;
+}
+.btn-icon:active { transform: scale(0.92); }
+
+.btn-icon--ghost {
+    background: var(--c-white);
+    box-shadow: var(--shadow-sm);
+    color: var(--c-text-h);
+}
+
+.btn-icon--primary {
+    background: var(--c-primary);
+    box-shadow: var(--shadow-btn);
+    color: white;
+}
+
+/* ---------- SCREEN 1: QR SCAN ---------- */
+.screen-header {
+    padding-top: 8px;
+    padding-bottom: 4px;
+}
+
+.app-logo { display: inline-block; margin-bottom: 12px; }
+
+.qr-card {
+    flex: 1;
+    min-height: 0;
+    border-radius: var(--r-card-lg);
+    background: #1a1a2e;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    max-height: 340px;
+}
+
+#qr-reader {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 280px;
+}
+
+/* Override html5-qrcode default styles */
+#qr-reader > div { border: none !important; }
+#qr-reader video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+    border: none !important;
+}
+#qr-reader__scan_region img { display: none !important; }
+#qr-reader__dashboard { display: none !important; }
+#qr-reader__status_span { display: none !important; }
+
+.qr-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.45);
+}
+
+.qr-frame {
+    width: 200px;
+    height: 200px;
+    position: relative;
+}
+
+.qr-corner {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-color: white;
+    border-style: solid;
+}
+.qr-corner--tl { top:0; left:0; border-width: 3px 0 0 3px; border-radius: 6px 0 0 0; }
+.qr-corner--tr { top:0; right:0; border-width: 3px 3px 0 0; border-radius: 0 6px 0 0; }
+.qr-corner--bl { bottom:0; left:0; border-width: 0 0 3px 3px; border-radius: 0 0 0 6px; }
+.qr-corner--br { bottom:0; right:0; border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
+
+.qr-scan-line {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(74,144,255,0.95), transparent);
+    animation: scanLine 2s ease-in-out infinite;
+    border-radius: 1px;
+}
+
+@keyframes scanLine {
+    0%   { top: 0; opacity: 1; }
+    50%  { top: calc(100% - 2px); opacity: 1; }
+    100% { top: 0; opacity: 1; }
+}
+
+.qr-hint {
+    position: absolute;
+    bottom: 12px; left: 12px; right: 12px;
+    background: rgba(0,0,0,0.65);
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+/* Status badge */
+.status-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: var(--r-card-sm);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-badge--info    { background: var(--c-primary-lite); color: var(--c-primary); }
+.status-badge--success { background: #DCFCE7; color: #16A34A; }
+.status-badge--error   { background: #FEE2E2; color: #DC2626; }
+
+.status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: blink 1.2s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* ---------- SCREEN 2: CAMERA ---------- */
+.camera-header, .report-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 8px;
+}
+
+.camera-instruction {
+    font-size: 14px;
+    color: var(--c-text-cap);
+    font-weight: 600;
+    margin-top: -4px;
+}
+
+.room-label-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.room-label-header__badge {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--c-primary);
+    background: var(--c-primary-lite);
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.08em;
+}
+
+.room-label-header__number {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--c-text-h);
+    letter-spacing: 0.02em;
+}
+
+.camera-card {
+    flex: 1;
+    min-height: 0;
+    max-height: 360px;
+    border-radius: var(--r-card-lg);
+    overflow: hidden;
+    background: #1a1a2e;
+    position: relative;
+    box-shadow: var(--shadow-card);
+}
+
+.camera-preview {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.camera-overlay-ui {
+    position: absolute;
+    top: 12px; right: 12px;
+}
+
+.photo-counter-badge {
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 15px;
+    font-weight: 800;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 1px;
+}
+
+.photo-counter-badge__sep { color: rgba(255,255,255,0.5); margin: 0 1px; }
+.photo-counter-badge__max { color: rgba(255,255,255,0.6); }
+
+.camera-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+}
+
+/* Shutter Button */
+.btn-shutter {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: none; border: none;
+    cursor: pointer;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 120ms ease;
+}
+.btn-shutter:active { transform: scale(0.93); }
+
+.btn-shutter__ring {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    border: 3px solid var(--c-primary);
+    background: rgba(74,144,255,0.08);
+}
+
+.btn-shutter__inner {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    background: var(--c-primary);
+    box-shadow: 0 4px 16px rgba(74,144,255,0.4);
+    transition: transform 120ms ease, background 120ms ease;
+}
+
+.btn-shutter:active .btn-shutter__inner {
+    background: var(--c-primary-dark);
+    transform: scale(0.93);
+}
+
+/* Photo thumbnails */
+.photo-thumbnails {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px 0 8px;
+    scrollbar-width: none;
+    min-height: 76px;
+    align-items: center;
+}
+.photo-thumbnails::-webkit-scrollbar { display: none; }
+
+.thumb-wrap {
+    position: relative;
+    flex-shrink: 0;
+    animation: thumbIn 200ms ease;
+}
+
+@keyframes thumbIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+}
+
+.thumb-wrap img {
+    width: 64px; height: 64px;
+    object-fit: cover;
+    border-radius: var(--r-card-sm);
+    display: block;
+    border: 2px solid var(--c-white);
+    box-shadow: var(--shadow-sm);
+}
+
+.thumb-delete {
+    position: absolute;
+    top: -6px; right: -6px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--c-danger);
+    border: 2px solid white;
+    color: white; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 2;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 120ms ease;
+    line-height: 1;
+}
+.thumb-delete:active { transform: scale(0.88); }
+
+/* ---------- SCREEN 3: REPORT ---------- */
+.voice-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.voice-status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.voice-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background 200ms ease;
+}
+.voice-dot--idle  { background: var(--c-border); }
+.voice-dot--ready { background: var(--c-primary); animation: blink 1.5s infinite; }
+.voice-dot--rec   { background: var(--c-danger);  animation: blink 0.7s infinite; }
+.voice-dot--done  { background: var(--c-success); animation: none; }
+
+.voice-status-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-text-cap);
+    line-height: 1.4;
+}
+
+.voice-btn-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Mic button */
+.btn-mic {
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: var(--c-primary);
+    border: none; cursor: pointer;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 28px rgba(74,144,255,0.4);
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+.btn-mic:active {
+    transform: scale(0.94);
+    box-shadow: 0 4px 14px rgba(74,144,255,0.3);
+}
+
+.btn-mic--recording {
+    background: var(--c-danger) !important;
+    box-shadow: 0 8px 28px rgba(255,77,77,0.4) !important;
+    animation: micPulse 1s ease-in-out infinite;
+}
+
+.btn-mic__ripple {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    background: rgba(255,77,77,0.25);
+    transform: scale(1); opacity: 0;
+}
+
+.btn-mic--recording .btn-mic__ripple {
+    animation: ripple 1.2s ease-out infinite;
+}
+
+@keyframes micPulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.04); }
+}
+
+@keyframes ripple {
+    0%   { transform: scale(1);    opacity: 0.7; }
+    100% { transform: scale(1.55); opacity: 0;   }
+}
+
+.voice-timer {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--c-danger);
+    letter-spacing: 0.04em;
+}
+
+.voice-transcript-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.transcript-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--c-text-cap);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.voice-transcript, .note-input {
+    width: 100%;
+    border: 1.5px solid var(--c-border);
+    border-radius: var(--r-card-md);
+    padding: 12px 14px;
+    font-family: var(--ff);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--c-text-b);
+    line-height: 1.6;
+    resize: none;
+    background: var(--c-white);
+    outline: none;
+    transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.voice-transcript:focus, .note-input:focus {
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 3px rgba(74,144,255,0.12);
+}
+
+.voice-transcript::placeholder, .note-input::placeholder {
+    color: #B0B8C1;
+    font-weight: 400;
+}
+
+/* Report photos */
+.report-photo-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 2px 0;
+    min-height: 80px;
+    align-items: center;
+}
+.report-photo-scroll::-webkit-scrollbar { display: none; }
+
+.report-photo-thumb {
+    flex-shrink: 0;
+    width: 72px; height: 72px;
+    border-radius: var(--r-card-md);
+    object-fit: cover;
+    border: 2px solid rgba(74,144,255,0.2);
+    box-shadow: var(--shadow-sm);
+    animation: thumbIn 200ms ease;
+}
+
+/* Sticky CTA */
+.sticky-cta {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 12px var(--px) max(env(safe-area-inset-bottom), 16px);
+    background: linear-gradient(to top, rgba(248,249,251,1) 60%, rgba(248,249,251,0));
+    z-index: 10;
+}
+
+/* ---------- SCREEN 4: SUCCESS ---------- */
+.success-anim {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.success-circle {
+    width: 100px; height: 100px;
+    position: relative; z-index: 2;
+    animation: successPop 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes successPop {
+    0%   { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1);   opacity: 1; }
+}
+
+.success-check { width: 100px; height: 100px; }
+
+.checkmark {
+    stroke-dasharray: 40;
+    stroke-dashoffset: 40;
+    animation: drawCheck 500ms ease 400ms forwards;
+}
+@keyframes drawCheck { to { stroke-dashoffset: 0; } }
+
+.success-rings {
+    position: absolute;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.success-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(74,144,255,0.2);
+    animation: ringExpand 2.5s ease-out infinite;
+}
+.success-ring--1 { width: 120px; height: 120px; animation-delay: 0.5s; }
+.success-ring--2 { width: 150px; height: 150px; animation-delay: 1.2s; }
+
+@keyframes ringExpand {
+    0%   { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(1.5); opacity: 0;   }
+}
+
+.success-title {
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--c-text-h);
+    line-height: 1.3;
+}
+
+.success-subtitle {
+    font-size: 15px;
+    color: var(--c-text-cap);
+    font-weight: 600;
+}
+
+.success-meta {
+    display: flex;
+    gap: 12px;
+    background: var(--c-primary-lite);
+    border-radius: var(--r-card-md);
+    padding: 14px 16px;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.success-meta__item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 700;
+    color: var(--c-primary);
+}
+
+.success-countdown {
+    font-size: 13px;
+    color: var(--c-text-cap);
+    font-weight: 600;
+}
+
+/* ---------- TOAST ---------- */
+.toast {
+    position: fixed;
+    bottom: 100px;
+    left: var(--px); right: var(--px);
+    padding: 14px 18px;
+    border-radius: var(--r-card-md);
+    font-size: 14px; font-weight: 700;
+    color: white;
+    text-align: center;
+    z-index: 9999;
+    pointer-events: none;
+    transform: translateY(20px); opacity: 0;
+    transition: transform 250ms ease, opacity 250ms ease;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+.toast--visible   { transform: translateY(0); opacity: 1; }
+.toast--error     { background: var(--c-danger); }
+.toast--success   { background: var(--c-success); }
+.toast--info      { background: var(--c-primary); }
+.toast--warn      { background: var(--c-warn); }
+
+/* ---------- LOADING OVERLAY ---------- */
+.loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(4px);
+    z-index: 99999;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.loading-card {
+    background: white;
+    border-radius: var(--r-card-lg);
+    padding: 32px 40px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 16px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.2);
+    min-width: 160px;
+}
+
+.loading-spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--c-primary-lite);
+    border-top-color: var(--c-primary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-text {
+    font-size: 14px; font-weight: 700;
+    color: var(--c-text-cap);
+}
+
+/* ---------- EMPTY STATE ---------- */
+.empty-state-inline {
+    display: flex; align-items: center; justify-content: center;
+    height: 76px; width: 100%;
+    font-size: 13px; font-weight: 600;
+    color: var(--c-text-cap);
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (min-height: 750px) {
+    .qr-card    { max-height: 420px; }
+    .camera-card { max-height: 440px; }
+}
+
+@media (min-width: 480px) {
+    :root { --px: 24px; }
+    .screen { max-width: 480px; left: 50%; right: auto; transform: translateX(calc(100vw - 50%)); }
+    .screen--active { transform: translateX(-50%); }
+    .screen--exit   { transform: translateX(calc(-50% - 30%)); }
+    .sticky-cta, .toast { max-width: 480px; left: 50%; transform: translateX(-50%); right: auto; }
+    .toast--visible { transform: translateX(-50%) translateY(0); }
+}
+
+</style>
+</head>
+<body>
+
+    <!-- ==================== SCREEN 1: QR SCAN ==================== -->
+    <div id="screen-qr" class="screen screen--active">
+        <div class="screen__inner">
+            <div class="screen-header">
+                <div class="app-logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="10" fill="#4A90FF"/>
+                        <path d="M8 12h4v4H8v-4zm0 6h4v4H8v-4zm6-6h4v4h-4v-4zm6 0h4v4h-4v-4zm-6 6h4v4h-4v-4zm6 0h4v4h-4v-4z" fill="white" opacity="0.9"/>
+                        <rect x="8" y="8" width="4" height="2" rx="1" fill="white"/>
+                        <rect x="20" y="8" width="4" height="2" rx="1" fill="white"/>
+                        <rect x="8" y="22" width="4" height="2" rx="1" fill="white"/>
+                    </svg>
+                </div>
+                <h1 class="screen-title">Quét mã phòng</h1>
+                <p class="screen-subtitle">Đưa mã QR vào khung để nhận diện phòng</p>
+            </div>
+
+            <div class="qr-card">
+                <div id="qr-reader" class="qr-reader"></div>
+                <div class="qr-overlay">
+                    <div class="qr-frame">
+                        <span class="qr-corner qr-corner--tl"></span>
+                        <span class="qr-corner qr-corner--tr"></span>
+                        <span class="qr-corner qr-corner--bl"></span>
+                        <span class="qr-corner qr-corner--br"></span>
+                        <div class="qr-scan-line"></div>
+                    </div>
+                </div>
+                <div class="qr-hint">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A90FF" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                    </svg>
+                    <span>Giữ điện thoại ổn định và hướng vào mã QR</span>
+                </div>
+            </div>
+
+            <button id="btn-start-scan" class="btn btn--primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                </svg>
+                Bắt đầu quét
+            </button>
+
+            <div id="qr-status" class="status-badge status-badge--info" style="display:none">
+                <span class="status-dot"></span>
+                <span id="qr-status-text">Đang khởi động camera...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SCREEN 2: CAMERA CAPTURE ==================== -->
+    <div id="screen-camera" class="screen">
+        <div class="screen__inner">
+            <div class="camera-header">
+                <button class="btn-back" id="btn-camera-back">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <div class="room-label-header">
+                    <span class="room-label-header__badge">PHÒNG</span>
+                    <span id="camera-room-id" class="room-label-header__number">401</span>
+                </div>
+                <div style="width:40px"></div>
+            </div>
+
+            <p class="camera-instruction">Chụp ảnh sau khi dọn phòng xong</p>
+
+            <div class="camera-card">
+                <video id="camera-preview" class="camera-preview" autoplay playsinline muted></video>
+                <canvas id="camera-canvas" style="display:none"></canvas>
+                <div class="camera-overlay-ui">
+                    <div class="photo-counter-badge">
+                        <span id="photo-count">0</span><span class="photo-counter-badge__sep">/</span><span class="photo-counter-badge__max">3</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="camera-controls">
+                <button id="btn-switch-camera" class="btn-icon btn-icon--ghost">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 4v6h6"/><path d="M23 20v-6h-6"/>
+                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                    </svg>
+                </button>
+
+                <button id="btn-shutter" class="btn-shutter">
+                    <div class="btn-shutter__ring"></div>
+                    <div class="btn-shutter__inner"></div>
+                </button>
+
+                <button id="btn-camera-next" class="btn-icon btn-icon--primary" style="display:none">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
+                <div id="btn-camera-next-placeholder" style="width:48px"></div>
+            </div>
+
+            <div id="photo-thumbnails" class="photo-thumbnails"></div>
+        </div>
+    </div>
+
+    <!-- ==================== SCREEN 3: ROOM REPORT ==================== -->
+    <div id="screen-report" class="screen">
+        <div class="screen__inner screen__inner--scrollable">
+            <div class="report-header">
+                <button class="btn-back" id="btn-report-back">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <div class="room-label-header">
+                    <span class="room-label-header__badge">PHÒNG</span>
+                    <span id="report-room-id" class="room-label-header__number">401</span>
+                </div>
+                <div style="width:40px"></div>
+            </div>
+
+            <!-- Photos card -->
+            <div class="section-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A90FF" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                    <path d="M21 15l-5-5L5 21"/>
+                </svg>
+                Ảnh chụp
+            </div>
+            <div class="card card--main">
+                <div id="report-photos" class="report-photo-scroll"></div>
+                <div id="report-photos-empty" class="empty-state-inline" style="display:none">
+                    <span>Chưa có ảnh</span>
+                </div>
+            </div>
+
+            <!-- Voice recording card -->
+            <div class="section-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A90FF" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+                Ghi âm báo cáo
+            </div>
+            <div class="card card--main voice-card">
+                <div class="voice-status-row">
+                    <div id="voice-status-dot" class="voice-dot voice-dot--idle"></div>
+                    <span id="voice-status-label" class="voice-status-label">Nhấn mic để bắt đầu ghi âm</span>
+                </div>
+
+                <div class="voice-btn-wrap">
+                    <button id="btn-mic" class="btn-mic">
+                        <div class="btn-mic__ripple" id="mic-ripple"></div>
+                        <svg id="mic-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                        </svg>
+                    </button>
+                    <p id="voice-timer" class="voice-timer" style="display:none">00:00</p>
+                </div>
+
+                <div class="voice-transcript-wrap" id="voice-transcript-wrap">
+                    <label class="transcript-label">Nội dung báo cáo</label>
+                    <textarea
+                        id="voice-transcript"
+                        class="voice-transcript"
+                        placeholder="Nội dung ghi âm sẽ hiển thị ở đây. Bạn có thể chỉnh sửa thêm..."
+                        rows="4"
+                    ></textarea>
+                </div>
+            </div>
+
+            <!-- Extra note (optional) -->
+            <div class="section-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A90FF" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                </svg>
+                Ghi chú thêm <span style="color:#6B7280;font-weight:400">(tùy chọn)</span>
+            </div>
+            <div class="card card--secondary">
+                <textarea
+                    id="extra-note"
+                    class="note-input"
+                    placeholder="Nhập ghi chú nếu cần..."
+                    rows="2"
+                ></textarea>
+            </div>
+
+            <div style="height: 90px"></div>
+        </div>
+
+        <!-- Sticky submit button -->
+        <div class="sticky-cta">
+            <button id="btn-submit" class="btn btn--primary btn--cta">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                Gửi báo cáo
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== SCREEN 4: SUCCESS ==================== -->
+    <div id="screen-success" class="screen">
+        <div class="screen__inner screen__inner--center">
+            <div class="success-anim">
+                <div class="success-circle">
+                    <svg id="success-check" class="success-check" viewBox="0 0 52 52" fill="none">
+                        <circle cx="26" cy="26" r="25" stroke="#4A90FF" stroke-width="2" fill="#E8F4FF"/>
+                        <path class="checkmark" d="M14 27l8 8 16-16" stroke="#4A90FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="success-rings">
+                    <div class="success-ring success-ring--1"></div>
+                    <div class="success-ring success-ring--2"></div>
+                </div>
+            </div>
+
+            <h2 class="success-title">Gửi báo cáo<br>thành công!</h2>
+            <p class="success-subtitle" id="success-room-label">Phòng 401 đã được ghi nhận</p>
+
+            <div class="success-meta" id="success-meta">
+                <div class="success-meta__item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A90FF" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+                    </svg>
+                    <span id="success-photo-count">3 ảnh</span>
+                </div>
+                <div class="success-meta__item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A90FF" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    </svg>
+                    <span id="success-voice-status">Có ghi âm</span>
+                </div>
+                <div class="success-meta__item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4A90FF" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                    </svg>
+                    <span id="success-time"></span>
+                </div>
+            </div>
+
+            <div class="success-countdown" id="success-countdown">
+                Tự động chuyển sau <span id="countdown-num">3</span> giây
+            </div>
+
+            <button id="btn-new-room" class="btn btn--primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-8.49"/>
+                </svg>
+                Bắt đầu phòng mới
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== TOAST ==================== -->
+    <div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+
+    <!-- ==================== LOADING OVERLAY ==================== -->
+    <div id="loading-overlay" class="loading-overlay" style="display:none">
+        <div class="loading-card">
+            <div class="loading-spinner"></div>
+            <p id="loading-text" class="loading-text">Đang xử lý...</p>
+        </div>
+    </div>
+
+    <script>
+/**
+ * API Helper Module
+ * Handles all communication with the backend
+ *
+ * Usage in app.js:
+ *   api.get('/api/health')
+ *   api.post('/api/items', { name: 'Item 1' })
+ *   api.put('/api/items/1', { name: 'Updated' })
+ *   api.delete('/api/items/1')
+ *   api.uploadForm('/api/upload', formData)
+ *
+ * Upload to S3 via presigned URL:
+ *   const { upload_url, file_url } = await api.post('/api/upload/presigned-url', { filename: 'photo.jpg' });
+ *   await fetch(upload_url, { method: 'PUT', body: fileBlob, headers: { 'Content-Type': 'image/jpeg' } });
+ */
+
+const API_URL = 'https://pnyk3nmz2tznjvln5i5e6m2y3a0cpboc.lambda-url.ap-southeast-1.on.aws';
+
+/**
+ * Process response: check status and parse JSON
+ */
+async function processResponse(response) {
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.detail || data?.error || `HTTP ${response.status}`
+    );
+  }
+
+  if (data && data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
+const api = {
+  /**
+   * Make a GET request
+   * @param {string} path - API path (e.g., '/api/health')
+   * @param {object} params - Query parameters
+   * @returns {Promise<any>} Response data
+   */
+  async get(path, params = {}) {
+    const url = new URL(`${API_URL}${path}`);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        url.searchParams.append(key, value);
+      }
+    });
+
+    const response = await fetch(url.toString());
+    return processResponse(response);
+  },
+
+  /**
+   * Make a POST request
+   * @param {string} path - API path (e.g., '/api/items')
+   * @param {object} body - Request body
+   * @returns {Promise<any>} Response data
+   */
+  async post(path, body = {}) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return processResponse(response);
+  },
+
+  /**
+   * Make a PUT request
+   * @param {string} path - API path (e.g., '/api/items/1')
+   * @param {object} body - Request body
+   * @returns {Promise<any>} Response data
+   */
+  async put(path, body = {}) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return processResponse(response);
+  },
+
+  /**
+   * Make a DELETE request
+   * @param {string} path - API path (e.g., '/api/items/1')
+   * @param {object} body - Optional request body
+   * @returns {Promise<any>} Response data
+   */
+  async delete(path, body = null) {
+    const options = { method: 'DELETE' };
+    if (body) {
+      options.headers = { 'Content-Type': 'application/json' };
+      options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(`${API_URL}${path}`, options);
+    return processResponse(response);
+  },
+
+  /**
+   * Upload files with FormData
+   * @param {string} path - API path (e.g., '/api/upload')
+   * @param {FormData} formData - FormData object with files and fields
+   * @returns {Promise<any>} Response data
+   */
+  async uploadForm(path, formData) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      body: formData,
+    });
+    return processResponse(response);
+  },
+};
+
+// Export for use in other modules
+window.api = api;
+
+</script>
+    <script>
+/**
+ * Housekeeping QR Report — Main Application
+ * Flow: QR Scan → Camera Capture → Room Report → Success
+ */
+
+// ─── App State ────────────────────────────────────────────────────────────────
+const appState = {
+    roomId: null,
+    photos: [],        // [{blob, localUrl, s3Url}]
+    voiceText: '',
+    isRecording: false,
+    recognition: null,
+    recordTimer: null,
+    recordSeconds: 0,
+    countdownTimer: null,
+    cameraStream: null,
+    facingMode: 'environment',
+    qrScanner: null,
+    qrStarted: false,
+};
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = String(text ?? '');
+    return d.innerHTML;
+}
+
+let toastTimer = null;
+function showToast(message, type = 'info', duration = 3000) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `toast toast--${type} toast--visible`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+        toast.classList.remove('toast--visible');
+    }, duration);
+}
+
+function showLoading(text = 'Đang xử lý...') {
+    document.getElementById('loading-text').textContent = text;
+    document.getElementById('loading-overlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loading-overlay').style.display = 'none';
+}
+
+// ─── Screen Navigation ────────────────────────────────────────────────────────
+const SCREENS = ['screen-qr', 'screen-camera', 'screen-report', 'screen-success'];
+
+function navigateTo(targetId) {
+    const current = document.querySelector('.screen--active');
+    const target  = document.getElementById(targetId);
+    if (!target || current === target) return;
+
+    current.classList.add('screen--exit');
+    current.classList.remove('screen--active');
+    target.classList.add('screen--active');
+    target.style.transform = ''; // reset any inline
+
+    setTimeout(() => {
+        current.classList.remove('screen--exit');
+    }, 360);
+}
+
+function navigateBack(targetId) {
+    const current = document.querySelector('.screen--active');
+    const target  = document.getElementById(targetId);
+    if (!target || current === target) return;
+
+    // Reverse animation
+    current.style.transform = 'translateX(100%)';
+    current.style.transition = 'transform 280ms cubic-bezier(0.4,0,0.2,1)';
+    target.classList.remove('screen--exit');
+    target.classList.add('screen--active');
+    target.style.transform = 'translateX(-30%)';
+    target.style.transition = 'transform 280ms cubic-bezier(0.4,0,0.2,1)';
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            target.style.transform = 'translateX(0)';
+            current.style.transform = 'translateX(100%)';
+        });
+    });
+
+    setTimeout(() => {
+        current.classList.remove('screen--active');
+        current.style.transform = '';
+        current.style.transition = '';
+        target.style.transform = '';
+        target.style.transition = '';
+    }, 310);
+}
+
+// ─── SCREEN 1: QR SCAN ───────────────────────────────────────────────────────
+function initQRScreen() {
+    document.getElementById('btn-start-scan').addEventListener('click', startQRScanner);
+}
+
+async function startQRScanner() {
+    if (appState.qrStarted) return;
+
+    const statusEl = document.getElementById('qr-status');
+    const statusText = document.getElementById('qr-status-text');
+    statusEl.style.display = 'flex';
+    statusEl.className = 'status-badge status-badge--info';
+    statusText.textContent = 'Đang khởi động camera...';
+
+    try {
+        if (appState.qrScanner) {
+            try { await appState.qrScanner.stop(); } catch(e) {}
+            appState.qrScanner = null;
+        }
+
+        const html5QrCode = new Html5Qrcode('qr-reader');
+        appState.qrScanner = html5QrCode;
+
+        await html5QrCode.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 1.333 },
+            (decodedText) => onQRDetected(decodedText),
+            (errorMessage) => { /* silent scan errors */ }
+        );
+
+        appState.qrStarted = true;
+        statusText.textContent = 'Camera đang hoạt động — hướng vào mã QR';
+
+    } catch (err) {
+        console.error('QR Error:', err);
+        statusEl.className = 'status-badge status-badge--error';
+        statusText.textContent = 'Không thể khởi động camera. Kiểm tra quyền truy cập.';
+        showToast('Không thể mở camera. Cho phép quyền camera nhé!', 'error');
+    }
+}
+
+async function onQRDetected(decodedText) {
+    if (!appState.qrStarted) return;
+    appState.qrStarted = false;
+
+    // Stop QR scanner
+    try {
+        await appState.qrScanner.stop();
+    } catch(e) {}
+
+    const roomId = decodedText.trim();
+    appState.roomId = roomId;
+    appState.photos = [];
+
+    showToast(`Phòng ${roomId} đã nhận diện!`, 'success', 2000);
+
+    // Navigate to camera
+    setTimeout(() => {
+        openCameraScreen(roomId);
+    }, 400);
+}
+
+// ─── SCREEN 2: CAMERA CAPTURE ────────────────────────────────────────────────
+function initCameraScreen() {
+    document.getElementById('btn-camera-back').addEventListener('click', async () => {
+        await stopCameraStream();
+        // Reset QR screen
+        appState.qrStarted = false;
+        const statusEl = document.getElementById('qr-status');
+        statusEl.style.display = 'none';
+        navigateBack('screen-qr');
+        // Restart QR after short delay
+        setTimeout(startQRScanner, 500);
+    });
+
+    document.getElementById('btn-shutter').addEventListener('click', capturePhoto);
+
+    document.getElementById('btn-switch-camera').addEventListener('click', async () => {
+        appState.facingMode = appState.facingMode === 'environment' ? 'user' : 'environment';
+        await stopCameraStream();
+        await startCameraStream();
+    });
+
+    document.getElementById('btn-camera-next').addEventListener('click', () => {
+        goToReportScreen();
+    });
+}
+
+async function openCameraScreen(roomId) {
+    document.getElementById('camera-room-id').textContent = roomId;
+    appState.photos = [];
+    updatePhotoUI();
+    navigateTo('screen-camera');
+    await startCameraStream();
+}
+
+async function startCameraStream() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: appState.facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false,
+        });
+        appState.cameraStream = stream;
+        const video = document.getElementById('camera-preview');
+        video.srcObject = stream;
+    } catch (err) {
+        showToast('Không thể mở camera chụp ảnh', 'error');
+        console.error('Camera error:', err);
+    }
+}
+
+async function stopCameraStream() {
+    if (appState.cameraStream) {
+        appState.cameraStream.getTracks().forEach(t => t.stop());
+        appState.cameraStream = null;
+        document.getElementById('camera-preview').srcObject = null;
+    }
+}
+
+async function capturePhoto() {
+    if (appState.photos.length >= 3) {
+        showToast('Tối đa 3 ảnh', 'warn');
+        return;
+    }
+
+    const video  = document.getElementById('camera-preview');
+    const canvas = document.getElementById('camera-canvas');
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Flash effect
+    const flashDiv = document.createElement('div');
+    flashDiv.style.cssText = 'position:absolute;inset:0;background:white;opacity:0.7;border-radius:20px;pointer-events:none;animation:none;z-index:10;';
+    const cameraCard = document.querySelector('.camera-card');
+    cameraCard.appendChild(flashDiv);
+    setTimeout(() => flashDiv.remove(), 200);
+
+    canvas.toBlob((blob) => {
+        const localUrl = URL.createObjectURL(blob);
+        appState.photos.push({ blob, localUrl, s3Url: null });
+        updatePhotoUI();
+
+        if (appState.photos.length === 3) {
+            setTimeout(() => goToReportScreen(), 600);
+        }
+    }, 'image/jpeg', 0.85);
+}
+
+function updatePhotoUI() {
+    const count = appState.photos.length;
+    document.getElementById('photo-count').textContent = count;
+
+    // Thumbnails
+    const container = document.getElementById('photo-thumbnails');
+    container.innerHTML = appState.photos.map((p, i) => `
+        <div class="thumb-wrap" data-index="${i}">
+            <img src="${escapeHtml(p.localUrl)}" alt="Ảnh ${i+1}">
+            <button class="thumb-delete" data-index="${i}" aria-label="Xóa ảnh">✕</button>
+        </div>
+    `).join('');
+
+    // Delete handlers
+    container.querySelectorAll('.thumb-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.dataset.index);
+            URL.revokeObjectURL(appState.photos[idx].localUrl);
+            appState.photos.splice(idx, 1);
+            updatePhotoUI();
+        });
+    });
+
+    // Next button visibility
+    const nextBtn = document.getElementById('btn-camera-next');
+    const placeholder = document.getElementById('btn-camera-next-placeholder');
+    if (count >= 1) {
+        nextBtn.style.display = 'flex';
+        placeholder.style.display = 'none';
+    } else {
+        nextBtn.style.display = 'none';
+        placeholder.style.display = 'block';
+    }
+}
+
+function goToReportScreen() {
+    if (appState.photos.length === 0) {
+        showToast('Chụp ít nhất 1 ảnh trước!', 'warn');
+        return;
+    }
+    stopCameraStream();
+    buildReportScreen();
+    navigateTo('screen-report');
+}
+
+// ─── SCREEN 3: ROOM REPORT ────────────────────────────────────────────────────
+function initReportScreen() {
+    document.getElementById('btn-report-back').addEventListener('click', async () => {
+        stopVoiceRecording();
+        navigateBack('screen-camera');
+        await startCameraStream();
+    });
+
+    document.getElementById('btn-mic').addEventListener('click', toggleVoiceRecording);
+    document.getElementById('btn-submit').addEventListener('click', submitReport);
+}
+
+function buildReportScreen() {
+    document.getElementById('report-room-id').textContent = appState.roomId || '---';
+
+    // Render report photos
+    const photoScroll = document.getElementById('report-photos');
+    const photoEmpty  = document.getElementById('report-photos-empty');
+
+    if (appState.photos.length > 0) {
+        photoScroll.style.display = 'flex';
+        photoEmpty.style.display  = 'none';
+        photoScroll.innerHTML = appState.photos.map((p, i) => `
+            <img class="report-photo-thumb" src="${escapeHtml(p.localUrl)}" alt="Ảnh ${i+1}">
+        `).join('');
+    } else {
+        photoScroll.style.display = 'none';
+        photoEmpty.style.display  = 'flex';
+    }
+
+    // Reset voice state
+    document.getElementById('voice-transcript').value = appState.voiceText || '';
+    setVoiceState('idle');
+}
+
+// Voice recording
+function setVoiceState(state) {
+    const dot    = document.getElementById('voice-status-dot');
+    const label  = document.getElementById('voice-status-label');
+    const btnMic = document.getElementById('btn-mic');
+    const timer  = document.getElementById('voice-timer');
+
+    dot.className = `voice-dot voice-dot--${state}`;
+
+    switch (state) {
+        case 'idle':
+            label.textContent = 'Nhấn mic để bắt đầu ghi âm';
+            btnMic.classList.remove('btn-mic--recording');
+            timer.style.display = 'none';
+            break;
+        case 'ready':
+            label.textContent = 'Sẵn sàng ghi âm...';
+            btnMic.classList.remove('btn-mic--recording');
+            timer.style.display = 'none';
+            break;
+        case 'rec':
+            label.textContent = 'Đang ghi âm — nhấn để dừng';
+            btnMic.classList.add('btn-mic--recording');
+            timer.style.display = 'block';
+            break;
+        case 'done':
+            label.textContent = 'Đã ghi âm xong — nhấn để ghi lại';
+            btnMic.classList.remove('btn-mic--recording');
+            timer.style.display = 'none';
+            break;
+    }
+}
+
+function toggleVoiceRecording() {
+    if (appState.isRecording) {
+        stopVoiceRecording();
+    } else {
+        startVoiceRecording();
+    }
+}
+
+function startVoiceRecording() {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRec) {
+        showToast('Trình duyệt không hỗ trợ ghi âm. Vui lòng nhập tay.', 'warn', 4000);
+        return;
+    }
+
+    const isAndroidChrome = /Android/i.test(navigator.userAgent) && /Chrome/i.test(navigator.userAgent);
+    const textArea = document.getElementById('voice-transcript');
+    let finalText = textArea.value || '';
+    let lastProcessedIndex = -1;
+
+    function createRecognition() {
+        const rec = new SpeechRec();
+        rec.lang = 'vi-VN';
+        // Chromium bug #40324711: continuous mode is broken on Android Chrome
+        // - fires extra duplicate onresult event before onend
+        // - causes text to be duplicated/concatenated incorrectly
+        // Workaround: disable continuous on Android, rely on onend restart instead
+        rec.continuous = !isAndroidChrome;
+        rec.interimResults = true;
+
+        rec.onstart = () => {
+            appState.isRecording = true;
+            lastProcessedIndex = -1;
+            setVoiceState('rec');
+            startRecordTimer();
+        };
+
+        rec.onresult = (event) => {
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const result = event.results[i];
+                if (result.isFinal) {
+                    // On Android Chrome, skip if we already processed this index
+                    if (isAndroidChrome && i <= lastProcessedIndex) continue;
+                    lastProcessedIndex = i;
+                    finalText += result[0].transcript + ' ';
+                } else {
+                    interim += result[0].transcript;
+                }
+            }
+            textArea.value = finalText + interim;
+        };
+
+        rec.onerror = (event) => {
+            console.warn('Speech error:', event.error);
+            if (event.error === 'not-allowed') {
+                showToast('Không có quyền microphone', 'error');
+            }
+            stopVoiceRecording();
+        };
+
+        rec.onend = () => {
+            if (appState.isRecording) {
+                // Auto restart - create new instance to avoid stale result indices
+                const newRec = createRecognition();
+                appState.recognition = newRec;
+                try { newRec.start(); } catch(e) {}
+            } else {
+                appState.voiceText = textArea.value;
+                setVoiceState(textArea.value.trim() ? 'done' : 'idle');
+            }
+        };
+
+        return rec;
+    }
+
+    const rec = createRecognition();
+    appState.recognition = rec;
+    try {
+        rec.start();
+    } catch(e) {
+        showToast('Không thể bắt đầu ghi âm', 'error');
+    }
+}
+
+function stopVoiceRecording() {
+    appState.isRecording = false;
+    stopRecordTimer();
+    if (appState.recognition) {
+        try { appState.recognition.stop(); } catch(e) {}
+        appState.recognition = null;
+    }
+    const textArea = document.getElementById('voice-transcript');
+    if (textArea) {
+        appState.voiceText = textArea.value;
+        setVoiceState(textArea.value.trim() ? 'done' : 'idle');
+    }
+}
+
+function startRecordTimer() {
+    appState.recordSeconds = 0;
+    const timerEl = document.getElementById('voice-timer');
+    clearInterval(appState.recordTimer);
+    appState.recordTimer = setInterval(() => {
+        appState.recordSeconds++;
+        const m = Math.floor(appState.recordSeconds / 60).toString().padStart(2, '0');
+        const s = (appState.recordSeconds % 60).toString().padStart(2, '0');
+        timerEl.textContent = `${m}:${s}`;
+
+        // Auto-stop at 5 minutes
+        if (appState.recordSeconds >= 300) stopVoiceRecording();
+    }, 1000);
+}
+
+function stopRecordTimer() {
+    clearInterval(appState.recordTimer);
+    appState.recordTimer = null;
+}
+
+// Submit
+async function submitReport() {
+    if (appState.photos.length === 0) {
+        showToast('Cần ít nhất 1 ảnh để gửi báo cáo', 'warn');
+        return;
+    }
+    if (!appState.roomId) {
+        showToast('Thiếu thông tin phòng', 'error');
+        return;
+    }
+
+    stopVoiceRecording();
+    showLoading('Đang tải ảnh lên...');
+
+    try {
+        // Upload each photo to S3
+        const photoUrls = [];
+        for (let i = 0; i < appState.photos.length; i++) {
+            const photo = appState.photos[i];
+            const filename = `room-${appState.roomId}-${Date.now()}-${i}.jpg`;
+
+            // Get presigned URL
+            const { upload_url, file_url } = await api.post('/api/upload/presigned-url', { filename });
+
+            // Upload to S3
+            await fetch(upload_url, {
+                method: 'PUT',
+                body: photo.blob,
+                headers: { 'Content-Type': 'image/jpeg' },
+            });
+
+            photoUrls.push(file_url);
+            document.getElementById('loading-text').textContent = `Đang tải ảnh ${i+1}/${appState.photos.length}...`;
+        }
+
+        document.getElementById('loading-text').textContent = 'Đang gửi báo cáo...';
+
+        // Submit report
+        const voiceText = document.getElementById('voice-transcript').value.trim();
+        const note      = document.getElementById('extra-note').value.trim();
+
+        await api.post('/api/reports', {
+            room_id:    appState.roomId,
+            photo_urls: photoUrls,
+            voice_text: voiceText || null,
+            note:       note || null,
+        });
+
+        hideLoading();
+        openSuccessScreen(photoUrls.length, !!voiceText);
+
+    } catch (err) {
+        hideLoading();
+        console.error('Submit error:', err);
+        showToast('Gửi thất bại: ' + err.message, 'error', 5000);
+    }
+}
+
+// ─── SCREEN 4: SUCCESS ────────────────────────────────────────────────────────
+function initSuccessScreen() {
+    document.getElementById('btn-new-room').addEventListener('click', resetToQR);
+}
+
+function openSuccessScreen(photoCount, hasVoice) {
+    document.getElementById('success-room-label').textContent =
+        `Phòng ${appState.roomId} đã được ghi nhận`;
+    document.getElementById('success-photo-count').textContent = `${photoCount} ảnh`;
+    document.getElementById('success-voice-status').textContent = hasVoice ? 'Có ghi âm' : 'Không có ghi âm';
+    document.getElementById('success-time').textContent =
+        new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+    navigateTo('screen-success');
+
+    // Countdown
+    let count = 3;
+    document.getElementById('countdown-num').textContent = count;
+    clearInterval(appState.countdownTimer);
+    appState.countdownTimer = setInterval(() => {
+        count--;
+        if (count <= 0) {
+            clearInterval(appState.countdownTimer);
+            resetToQR();
+        } else {
+            document.getElementById('countdown-num').textContent = count;
+        }
+    }, 1000);
+}
+
+function resetToQR() {
+    clearInterval(appState.countdownTimer);
+    // Clean up state
+    appState.photos.forEach(p => URL.revokeObjectURL(p.localUrl));
+    appState.photos = [];
+    appState.roomId = null;
+    appState.voiceText = '';
+    appState.qrStarted = false;
+
+    // Reset voice UI
+    document.getElementById('voice-transcript').value = '';
+    document.getElementById('extra-note').value = '';
+
+    // Reset photo UI
+    document.getElementById('photo-thumbnails').innerHTML = '';
+    document.getElementById('photo-count').textContent = '0';
+    document.getElementById('btn-camera-next').style.display = 'none';
+    document.getElementById('btn-camera-next-placeholder').style.display = 'block';
+
+    // Reset QR status
+    document.getElementById('qr-status').style.display = 'none';
+
+    navigateBack('screen-qr');
+
+    // Auto-restart QR scanner
+    setTimeout(startQRScanner, 600);
+}
+
+// ─── BOOTSTRAP ────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    initQRScreen();
+    initCameraScreen();
+    initReportScreen();
+    initSuccessScreen();
+
+    // Auto-start QR scanner on load
+    setTimeout(startQRScanner, 800);
+});
+
+</script>
+</body>
+</html>
