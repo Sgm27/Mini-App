@@ -16,7 +16,7 @@ import mysql.connector
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_DIR = os.path.join(BASE_DIR, "full_stack_template_html")

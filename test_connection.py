@@ -2,7 +2,7 @@ import os
 import mysql.connector
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 config = {
     "host": os.getenv("MYSQL_HOST"),

@@ -1,8 +1,0 @@
-{
-  "project_name": "ds_save",
-  "db_name": "ds_save",
-  "s3_bucket_name": "ds-save-270717776915",
-  "mysql_host": "54.151.169.39",
-  "mysql_port": 3306,
-  "mysql_user": "root"
-}

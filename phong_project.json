@@ -1,8 +1,0 @@
-{
-  "project_name": "phong",
-  "db_name": "phong",
-  "s3_bucket_name": "phong-270717776915",
-  "mysql_host": "54.151.169.39",
-  "mysql_port": 3306,
-  "mysql_user": "root"
-}

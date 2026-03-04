@@ -27,7 +27,7 @@ from claude_agent_sdk.types import (
 
 from utils import APP_BUILDER_SYSTEM_PROMPT, create_project, deploy_project, merge_frontend
 
-load_dotenv()
+load_dotenv(override=True)  
 
 # Allow running inside a Claude Code session (e.g. VSCode terminal)
 os.environ.pop("CLAUDECODE", None)

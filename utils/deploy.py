@@ -26,7 +26,7 @@ from typing import Callable, Optional
 import boto3
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REGION = "ap-southeast-1"
@@ -239,9 +239,11 @@ def deploy_project(
 
     session = _get_session()
 
-    # 1. IAM Role
-    log(2, 7, "Getting/creating IAM role...")
-    role_arn = _get_or_create_role(session)
+    # 1. IAM Role (pre-created, loaded from .env)
+    role_arn = os.getenv("AWS_LAMBDA_ROLE_ARN")
+    if not role_arn:
+        raise ValueError("AWS_LAMBDA_ROLE_ARN not set in .env")
+    log(2, 7, f"Using IAM role: {role_arn}")
 
     # 2. ECR Repository
     log(3, 7, f"Getting/creating ECR repository '{function_name}'...")

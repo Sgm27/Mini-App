@@ -67,3 +67,7 @@ workspace/*
 # VPS Configurations
 vps-config/*
 !vps-config/.gitkeep
+
+# Log files
+logs/*
+!logs/.gitkeep
