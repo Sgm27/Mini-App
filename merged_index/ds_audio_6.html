@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Quản lý project audio — tạo project, upload cặp text và audio, nghe lại bất kỳ lúc nào.">
+    <title>Audio Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+/* ============================================
+   AUDIO STUDIO — Dark Studio Aesthetic
+   Fonts: Syne (display) + Space Mono (mono)
+   Palette: Deep black, warm amber accent, slate surfaces
+   ============================================ */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+
+    /* Colors */
+    --bg: #0a0a0a;
+    --bg-surface: #141414;
+    --bg-raised: #1c1c1c;
+    --bg-hover: #242424;
+    --border: #2a2a2a;
+    --border-light: #333;
+
+    --accent: #f5a623;
+    --accent-dim: #c47f0d;
+    --accent-glow: rgba(245, 166, 35, 0.12);
+    --accent-glow-strong: rgba(245, 166, 35, 0.22);
+
+    --text-primary: #f0ede6;
+    --text-secondary: #8a8580;
+    --text-muted: #555;
+    --text-accent: var(--accent);
+
+    --danger: #e05252;
+    --danger-dim: rgba(224, 82, 82, 0.12);
+    --success: #4ade80;
+
+    --sidebar-w: 260px;
+    --player-h: 70px;
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-full: 999px;
+
+    --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+html, body {
+    height: 100%;
+    font-family: var(--font-display);
+    background: var(--bg);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+}
+
+/* ============================================
+   LAYOUT: Sidebar + Main
+   ============================================ */
+
+body {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    grid-template-rows: 1fr auto;
+    height: 100vh;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+
+.sidebar {
+    grid-row: 1 / 3;
+    grid-column: 1;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.sidebar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.sidebar__logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar__logo-icon {
+    font-size: 22px;
+    color: var(--accent);
+    line-height: 1;
+}
+
+.sidebar__logo-text {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 11px;
+    line-height: 1.3;
+    letter-spacing: 0.12em;
+    color: var(--text-primary);
+}
+
+.sidebar__search {
+    padding: 12px 12px 8px;
+    flex-shrink: 0;
+}
+
+.search-input {
+    width: 100%;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s var(--ease);
+}
+
+.search-input::placeholder { color: var(--text-muted); }
+.search-input:focus { border-color: var(--accent); }
+
+.sidebar__nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 8px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.sidebar__nav::-webkit-scrollbar { width: 4px; }
+.sidebar__nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Project items in sidebar */
+.project-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s var(--ease);
+    border: 1px solid transparent;
+    margin-bottom: 2px;
+}
+
+.project-item:hover {
+    background: var(--bg-hover);
+}
+
+.project-item.active {
+    background: var(--accent-glow);
+    border-color: rgba(245, 166, 35, 0.3);
+}
+
+.project-item__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    color: var(--text-secondary);
+}
+
+.project-item.active .project-item__icon {
+    background: var(--accent-glow-strong);
+    border-color: var(--accent-dim);
+    color: var(--accent);
+}
+
+.project-item__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.project-item__name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.project-item.active .project-item__name { color: var(--accent); }
+
+.project-item__count {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.sidebar__empty {
+    padding: 24px 12px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+/* Loading dots */
+.sidebar__loading {
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+}
+
+.dot-pulse {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.dot-pulse span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.3;
+    animation: dot-blink 1.2s infinite ease-in-out;
+}
+
+.dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+.dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dot-blink {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(1); }
+    40% { opacity: 1; transform: scale(1.2); }
+}
+
+/* ============================================
+   MAIN AREA
+   ============================================ */
+
+.main {
+    grid-column: 2;
+    grid-row: 1;
+    overflow-y: auto;
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.main::-webkit-scrollbar { width: 4px; }
+.main::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* ============================================
+   WELCOME SCREEN
+   ============================================ */
+
+.welcome-screen {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.welcome-screen__content {
+    text-align: center;
+    animation: fade-up 0.5s var(--ease-out);
+}
+
+.welcome-screen__icon {
+    font-size: 52px;
+    color: var(--accent);
+    opacity: 0.3;
+    margin-bottom: 24px;
+    display: block;
+}
+
+.welcome-screen__title {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.welcome-screen__subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 32px;
+}
+
+@keyframes fade-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   PROJECT VIEW
+   ============================================ */
+
+.project-view {
+    padding: 28px 32px;
+    min-height: 100%;
+    animation: fade-up 0.3s var(--ease-out);
+}
+
+.project-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.project-header__name {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.project-header__desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    line-height: 1.6;
+}
+
+.project-header__actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+/* ============================================
+   ENTRIES GRID
+   ============================================ */
+
+.entries-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+/* Entry card */
+.entry-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s var(--ease), background 0.2s var(--ease), transform 0.15s var(--ease);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.entry-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent-glow);
+    opacity: 0;
+    transition: opacity 0.2s var(--ease);
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.entry-card:hover {
+    border-color: var(--border-light);
+    transform: translateY(-1px);
+}
+
+.entry-card:hover::before { opacity: 1; }
+
+.entry-card.playing {
+    border-color: var(--accent-dim);
+    background: var(--bg-raised);
+}
+
+.entry-card.playing::before { opacity: 1; }
+
+.entry-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.entry-card__play-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+}
+
+.entry-card__play-btn:hover,
+.entry-card.playing .entry-card__play-btn {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+}
+
+.entry-card__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.4;
+    flex: 1;
+}
+
+.entry-card.playing .entry-card__title { color: var(--accent); }
+
+.entry-card__text-preview {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.entry-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+.entry-card__date {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.entry-card__delete {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    opacity: 0;
+}
+
+.entry-card:hover .entry-card__delete { opacity: 1; }
+.entry-card__delete:hover { background: var(--danger-dim); color: var(--danger); }
+
+/* Entries empty state */
+.entries-empty {
+    grid-column: 1 / -1;
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.entries-empty__icon {
+    font-size: 40px;
+    opacity: 0.2;
+    margin-bottom: 16px;
+    display: block;
+}
+
+.entries-empty p {
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+/* ============================================
+   AUDIO PLAYER (bottom bar)
+   ============================================ */
+
+.player {
+    grid-column: 2;
+    grid-row: 2;
+    height: var(--player-h);
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    z-index: 20;
+}
+
+.player__track {
+    min-width: 0;
+    width: 180px;
+    flex-shrink: 0;
+}
+
+.player__track-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.player__track-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player__track-project {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player__controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.player__btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: color 0.15s, background 0.15s;
+    padding: 6px;
+}
+
+.player__btn--main {
+    width: 40px;
+    height: 40px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.player__btn--main:hover { background: #e09510; }
+
+.player__progress-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.player__time {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    width: 32px;
+    text-align: center;
+}
+
+.player__progress-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--bg-raised);
+    border-radius: 2px;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.player__progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0;
+    transition: width 0.1s linear;
+    pointer-events: none;
+}
+
+.player__progress-thumb {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%) translateX(-50%);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    left: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.player__progress-bar:hover .player__progress-thumb { opacity: 1; }
+
+.player__volume {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    color: var(--text-muted);
+}
+
+.volume-slider {
+    -webkit-appearance: none;
+    width: 80px;
+    height: 4px;
+    background: var(--bg-raised);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+}
+
+.player__text-toggle {
+    flex-shrink: 0;
+}
+
+/* ============================================
+   TEXT PANEL (slides up from player)
+   ============================================ */
+
+.text-panel {
+    position: fixed;
+    bottom: var(--player-h);
+    right: 0;
+    left: var(--sidebar-w);
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    z-index: 15;
+    max-height: 280px;
+    display: flex;
+    flex-direction: column;
+    animation: slide-up 0.25s var(--ease-out);
+}
+
+@keyframes slide-up {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+}
+
+.text-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.text-panel__title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.text-panel__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+}
+
+.btn--primary {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+}
+.btn--primary:hover { background: #e09510; border-color: #e09510; }
+
+.btn--secondary {
+    background: var(--bg-raised);
+    color: var(--text-primary);
+    border-color: var(--border-light);
+}
+.btn--secondary:hover { background: var(--bg-hover); border-color: var(--accent-dim); color: var(--accent); }
+
+.btn--ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border-color: var(--border);
+}
+.btn--ghost:hover { background: var(--bg-raised); color: var(--text-primary); }
+
+.btn--danger {
+    background: transparent;
+    color: var(--danger);
+    border-color: rgba(224, 82, 82, 0.3);
+}
+.btn--danger:hover { background: var(--danger-dim); }
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Icon-only button */
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.btn-icon:hover {
+    background: var(--bg-hover);
+    color: var(--accent);
+    border-color: var(--accent-dim);
+}
+
+.btn-icon--sm {
+    width: 26px;
+    height: 26px;
+}
+
+/* ============================================
+   MODAL
+   ============================================ */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+    animation: fade-in 0.2s var(--ease);
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.modal {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 460px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modal-in 0.25s var(--ease-out);
+}
+
+.modal--wide { max-width: 600px; }
+
+@keyframes modal-in {
+    from { opacity: 0; transform: scale(0.95) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modal__title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+}
+
+.modal__form {
+    padding: 20px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.required { color: var(--accent); }
+
+.form-input,
+.form-textarea {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    width: 100%;
+    resize: none;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder { color: var(--text-muted); }
+
+.form-input:focus,
+.form-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.form-textarea--tall { min-height: 120px; resize: vertical; }
+
+.form-error {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.form-error-global {
+    background: var(--danger-dim);
+    border: 1px solid rgba(224, 82, 82, 0.3);
+    border-radius: var(--radius-sm);
+    color: var(--danger);
+    font-size: 13px;
+    padding: 10px 14px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 4px;
+}
+
+/* ============================================
+   FILE DROP ZONE
+   ============================================ */
+
+.file-drop-zone {
+    border: 1px dashed var(--border-light);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.file-drop-zone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.file-drop-zone__inner {
+    padding: 28px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.file-drop-zone__inner svg { color: var(--text-muted); margin-bottom: 4px; }
+
+.file-drop-zone__hint { color: var(--text-muted); }
+
+.file-drop-zone__browse {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.file-drop-zone__types {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.file-drop-zone__selected {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent-glow);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.file-drop-zone__selected span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ============================================
+   UPLOAD PROGRESS
+   ============================================ */
+
+.upload-progress {
+    margin-top: 8px;
+    background: var(--bg-raised);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.upload-progress__bar {
+    height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0;
+    transition: width 0.3s var(--ease);
+    animation: progress-shimmer 1.5s infinite;
+}
+
+@keyframes progress-shimmer {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+.upload-progress__label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ============================================
+   UTILITY
+   ============================================ */
+
+.hidden { display: none !important; }
+
+/* Scrollbar for main area */
+.main::-webkit-scrollbar { width: 4px; }
+.main::-webkit-scrollbar-track { background: transparent; }
+.main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ============================================
+   RESPONSIVE (narrow screens)
+   ============================================ */
+
+@media (max-width: 768px) {
+    :root {
+        --sidebar-w: 220px;
+    }
+
+    .project-view {
+        padding: 20px 16px;
+    }
+
+    .project-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .entries-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .player {
+        padding: 0 12px;
+        gap: 10px;
+    }
+
+    .player__track { width: 120px; }
+    .player__volume { display: none; }
+    .player__time { display: none; }
+
+    .text-panel { left: 0; }
+}
+
+</style>
+</head>
+<body>
+
+    <!-- Sidebar: project list -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar__header">
+            <div class="sidebar__logo">
+                <span class="sidebar__logo-icon">◈</span>
+                <span class="sidebar__logo-text">AUDIO<br>STUDIO</span>
+            </div>
+            <button class="btn-icon" id="btn-new-project" title="Tạo project mới">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+        </div>
+
+        <div class="sidebar__search">
+            <input type="text" id="search-projects" placeholder="Tìm project..." class="search-input" autocomplete="off">
+        </div>
+
+        <nav class="sidebar__nav" id="project-list">
+            <div class="sidebar__loading" id="projects-loading">
+                <div class="dot-pulse"><span></span><span></span><span></span></div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main" id="main">
+
+        <!-- Empty state when no project is selected -->
+        <div class="welcome-screen" id="welcome-screen">
+            <div class="welcome-screen__content">
+                <div class="welcome-screen__icon">◈</div>
+                <h1 class="welcome-screen__title">Audio Studio</h1>
+                <p class="welcome-screen__subtitle">Chọn một project từ danh sách bên trái<br>hoặc tạo project mới để bắt đầu.</p>
+                <button class="btn btn--primary" id="btn-welcome-new">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Tạo Project Mới
+                </button>
+            </div>
+        </div>
+
+        <!-- Project detail view -->
+        <div class="project-view" id="project-view" style="display:none;">
+            <header class="project-header">
+                <div class="project-header__info">
+                    <h2 class="project-header__name" id="project-name">—</h2>
+                    <p class="project-header__desc" id="project-desc"></p>
+                </div>
+                <div class="project-header__actions">
+                    <button class="btn btn--secondary" id="btn-add-entry">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Thêm Audio
+                    </button>
+                    <button class="btn btn--danger" id="btn-delete-project">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                        Xóa
+                    </button>
+                </div>
+            </header>
+
+            <div class="entries-grid" id="entries-grid">
+                <!-- Audio entries rendered here -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Bottom Audio Player -->
+    <div class="player" id="player" style="display:none;">
+        <div class="player__track">
+            <div class="player__track-info">
+                <span class="player__track-title" id="player-title">—</span>
+                <span class="player__track-project" id="player-project">—</span>
+            </div>
+        </div>
+
+        <div class="player__controls">
+            <button class="player__btn player__btn--main" id="btn-play-pause" title="Phát / Dừng">
+                <svg id="icon-play" viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <svg id="icon-pause" viewBox="0 0 24 24" fill="currentColor" width="22" height="22" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+        </div>
+
+        <div class="player__progress-area">
+            <span class="player__time" id="player-current">0:00</span>
+            <div class="player__progress-bar" id="progress-bar">
+                <div class="player__progress-fill" id="progress-fill"></div>
+                <div class="player__progress-thumb" id="progress-thumb"></div>
+            </div>
+            <span class="player__time" id="player-duration">0:00</span>
+        </div>
+
+        <div class="player__volume">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.02" value="1" class="volume-slider">
+        </div>
+
+        <div class="player__text-toggle">
+            <button class="btn-icon btn-icon--sm" id="btn-toggle-text" title="Xem text">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </button>
+        </div>
+
+        <audio id="audio-element"></audio>
+    </div>
+
+    <!-- Text panel (slides up from player) -->
+    <div class="text-panel" id="text-panel" style="display:none;">
+        <div class="text-panel__header">
+            <span class="text-panel__title" id="text-panel-title">—</span>
+            <button class="btn-icon btn-icon--sm" id="btn-close-text">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="text-panel__body" id="text-panel-body"></div>
+    </div>
+
+    <!-- Modal: Create project -->
+    <div class="modal-overlay" id="modal-project" style="display:none;">
+        <div class="modal">
+            <div class="modal__header">
+                <h3 class="modal__title">Tạo Project Mới</h3>
+                <button class="btn-icon btn-icon--sm" id="btn-close-project-modal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form id="form-project" class="modal__form">
+                <div class="form-group">
+                    <label class="form-label" for="project-input-name">Tên project <span class="required">*</span></label>
+                    <input type="text" id="project-input-name" name="name" class="form-input" placeholder="Ví dụ: Bài học tiếng Anh..." required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="project-input-desc">Mô tả</label>
+                    <textarea id="project-input-desc" name="description" class="form-textarea" rows="3" placeholder="Mô tả ngắn về project..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn--ghost" id="btn-cancel-project">Hủy</button>
+                    <button type="submit" class="btn btn--primary" id="btn-submit-project">Tạo Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Add audio entry -->
+    <div class="modal-overlay" id="modal-entry" style="display:none;">
+        <div class="modal modal--wide">
+            <div class="modal__header">
+                <h3 class="modal__title">Thêm Audio Mới</h3>
+                <button class="btn-icon btn-icon--sm" id="btn-close-entry-modal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <form id="form-entry" class="modal__form">
+                <div class="form-group">
+                    <label class="form-label" for="entry-input-title">Tiêu đề <span class="required">*</span></label>
+                    <input type="text" id="entry-input-title" name="title" class="form-input" placeholder="Ví dụ: Lesson 01 — Greetings..." required autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="entry-input-text">Nội dung text <span class="required">*</span></label>
+                    <textarea id="entry-input-text" name="text_content" class="form-textarea form-textarea--tall" rows="5" placeholder="Nhập nội dung văn bản tương ứng với audio..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">File Audio <span class="required">*</span></label>
+                    <div class="file-drop-zone" id="file-drop-zone">
+                        <div class="file-drop-zone__inner" id="file-drop-inner">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                            <p>Kéo thả file audio vào đây</p>
+                            <p class="file-drop-zone__hint">hoặc <label for="audio-file-input" class="file-drop-zone__browse">chọn file</label></p>
+                            <p class="file-drop-zone__types">MP3, WAV, OGG, M4A — tối đa 50MB</p>
+                        </div>
+                        <div class="file-drop-zone__selected" id="file-selected" style="display:none;">
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                            <span id="file-selected-name">—</span>
+                            <button type="button" class="btn-icon btn-icon--sm" id="btn-clear-file">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="file" id="audio-file-input" accept="audio/*" style="display:none;">
+                    <div class="upload-progress" id="upload-progress" style="display:none;">
+                        <div class="upload-progress__bar" id="upload-progress-bar"></div>
+                        <span class="upload-progress__label" id="upload-progress-label">Đang tải lên...</span>
+                    </div>
+                </div>
+                <div class="form-error-global" id="entry-form-error" style="display:none;"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn--ghost" id="btn-cancel-entry">Hủy</button>
+                    <button type="submit" class="btn btn--primary" id="btn-submit-entry">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+/**
+ * API Helper Module
+ * Handles all communication with the backend
+ *
+ * Usage in app.js:
+ *   api.get('/api/health')
+ *   api.post('/api/items', { name: 'Item 1' })
+ *   api.put('/api/items/1', { name: 'Updated' })
+ *   api.delete('/api/items/1')
+ *   api.uploadForm('/api/upload', formData)
+ *
+ * Upload file:
+ *   const formData = new FormData();
+ *   formData.append('file', fileInput.files[0]);
+ *   const { file_url } = await api.uploadForm('/api/upload', formData);
+ */
+
+const API_URL = 'https://hofjfipqrq2b43tupi7qyjdgwq0huyir.lambda-url.ap-southeast-1.on.aws';
+
+/**
+ * Process response: check status and parse JSON
+ */
+async function processResponse(response) {
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.detail || data?.error || `HTTP ${response.status}`
+    );
+  }
+
+  if (data && data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
+const api = {
+  /**
+   * Make a GET request
+   * @param {string} path - API path (e.g., '/api/health')
+   * @param {object} params - Query parameters
+   * @returns {Promise<any>} Response data
+   */
+  async get(path, params = {}) {
+    const url = new URL(`${API_URL}${path}`);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        url.searchParams.append(key, value);
+      }
+    });
+
+    const response = await fetch(url.toString());
+    return processResponse(response);
+  },
+
+  /**
+   * Make a POST request
+   * @param {string} path - API path (e.g., '/api/items')
+   * @param {object} body - Request body
+   * @returns {Promise<any>} Response data
+   */
+  async post(path, body = {}) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return processResponse(response);
+  },
+
+  /**
+   * Make a PUT request
+   * @param {string} path - API path (e.g., '/api/items/1')
+   * @param {object} body - Request body
+   * @returns {Promise<any>} Response data
+   */
+  async put(path, body = {}) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return processResponse(response);
+  },
+
+  /**
+   * Make a DELETE request
+   * @param {string} path - API path (e.g., '/api/items/1')
+   * @param {object} body - Optional request body
+   * @returns {Promise<any>} Response data
+   */
+  async delete(path, body = null) {
+    const options = { method: 'DELETE' };
+    if (body) {
+      options.headers = { 'Content-Type': 'application/json' };
+      options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(`${API_URL}${path}`, options);
+    return processResponse(response);
+  },
+
+  /**
+   * Upload files with FormData
+   * @param {string} path - API path (e.g., '/api/upload')
+   * @param {FormData} formData - FormData object with files and fields
+   * @returns {Promise<any>} Response data
+   */
+  async uploadForm(path, formData) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      body: formData,
+    });
+    return processResponse(response);
+  },
+};
+
+// Export for use in other modules
+window.api = api;
+
+</script>
+    <script>
+/**
+ * Audio Studio — Main Application
+ */
+
+// ─── State ───────────────────────────────────────────────────────────────────
+const state = {
+    projects: [],
+    currentProjectId: null,
+    entries: [],
+    currentEntryId: null,
+    selectedAudioFile: null,
+    searchQuery: '',
+};
+
+// ─── DOM refs ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+const els = {
+    projectList: $('project-list'),
+    projectsLoading: $('projects-loading'),
+    searchProjects: $('search-projects'),
+
+    welcomeScreen: $('welcome-screen'),
+    projectView: $('project-view'),
+    projectName: $('project-name'),
+    projectDesc: $('project-desc'),
+    entriesGrid: $('entries-grid'),
+
+    // Player
+    player: $('player'),
+    audioEl: $('audio-element'),
+    btnPlayPause: $('btn-play-pause'),
+    iconPlay: $('icon-play'),
+    iconPause: $('icon-pause'),
+    progressBar: $('progress-bar'),
+    progressFill: $('progress-fill'),
+    progressThumb: $('progress-thumb'),
+    playerCurrent: $('player-current'),
+    playerDuration: $('player-duration'),
+    playerTitle: $('player-title'),
+    playerProject: $('player-project'),
+    volumeSlider: $('volume-slider'),
+
+    // Text panel
+    textPanel: $('text-panel'),
+    textPanelTitle: $('text-panel-title'),
+    textPanelBody: $('text-panel-body'),
+
+    // Modals
+    modalProject: $('modal-project'),
+    formProject: $('form-project'),
+
+    modalEntry: $('modal-entry'),
+    formEntry: $('form-entry'),
+    fileDropZone: $('file-drop-zone'),
+    fileDropInner: $('file-drop-inner'),
+    fileSelected: $('file-selected'),
+    fileSelectedName: $('file-selected-name'),
+    audioFileInput: $('audio-file-input'),
+    uploadProgress: $('upload-progress'),
+    uploadProgressBar: $('upload-progress-bar'),
+    entryFormError: $('entry-form-error'),
+};
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    bindEvents();
+    loadProjects();
+});
+
+// ─── Event Binding ────────────────────────────────────────────────────────────
+function bindEvents() {
+    // New project buttons
+    $('btn-new-project').addEventListener('click', openProjectModal);
+    $('btn-welcome-new').addEventListener('click', openProjectModal);
+
+    // Project modal
+    $('btn-close-project-modal').addEventListener('click', closeProjectModal);
+    $('btn-cancel-project').addEventListener('click', closeProjectModal);
+    els.formProject.addEventListener('submit', onSubmitProject);
+    els.modalProject.addEventListener('click', e => { if (e.target === els.modalProject) closeProjectModal(); });
+
+    // Project actions
+    $('btn-add-entry').addEventListener('click', openEntryModal);
+    $('btn-delete-project').addEventListener('click', onDeleteProject);
+
+    // Entry modal
+    $('btn-close-entry-modal').addEventListener('click', closeEntryModal);
+    $('btn-cancel-entry').addEventListener('click', closeEntryModal);
+    els.formEntry.addEventListener('submit', onSubmitEntry);
+    els.modalEntry.addEventListener('click', e => { if (e.target === els.modalEntry) closeEntryModal(); });
+
+    // File upload
+    els.audioFileInput.addEventListener('change', onFileSelected);
+    $('btn-clear-file').addEventListener('click', clearSelectedFile);
+    setupDragDrop();
+
+    // Player
+    els.btnPlayPause.addEventListener('click', togglePlayPause);
+    els.progressBar.addEventListener('click', onSeek);
+    els.volumeSlider.addEventListener('input', e => { els.audioEl.volume = e.target.value; });
+    els.audioEl.addEventListener('timeupdate', onTimeUpdate);
+    els.audioEl.addEventListener('loadedmetadata', onMetadata);
+    els.audioEl.addEventListener('ended', onEnded);
+    els.audioEl.addEventListener('play', () => setPlayIcon(true));
+    els.audioEl.addEventListener('pause', () => setPlayIcon(false));
+
+    // Text panel
+    $('btn-toggle-text').addEventListener('click', toggleTextPanel);
+    $('btn-close-text').addEventListener('click', hideTextPanel);
+
+    // Search
+    els.searchProjects.addEventListener('input', e => {
+        state.searchQuery = e.target.value.toLowerCase();
+        renderProjectList();
+    });
+
+    // Keyboard
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            if (els.modalProject.style.display !== 'none') closeProjectModal();
+            if (els.modalEntry.style.display !== 'none') closeEntryModal();
+            if (els.textPanel.style.display !== 'none') hideTextPanel();
+        }
+        if (e.key === ' ' && e.target === document.body && state.currentEntryId) {
+            e.preventDefault();
+            togglePlayPause();
+        }
+    });
+}
+
+// ─── Projects ─────────────────────────────────────────────────────────────────
+async function loadProjects() {
+    els.projectsLoading.style.display = 'flex';
+    try {
+        state.projects = await api.get('/api/projects');
+        renderProjectList();
+    } catch (err) {
+        els.projectList.innerHTML = `<p class="sidebar__empty">Không thể tải projects.<br><small>${escapeHtml(err.message)}</small></p>`;
+    } finally {
+        els.projectsLoading.style.display = 'none';
+    }
+}
+
+function renderProjectList() {
+    const filtered = state.projects.filter(p =>
+        p.name.toLowerCase().includes(state.searchQuery)
+    );
+
+    if (filtered.length === 0) {
+        els.projectList.innerHTML = state.searchQuery
+            ? `<p class="sidebar__empty">Không tìm thấy kết quả</p>`
+            : `<p class="sidebar__empty">Chưa có project nào.<br>Nhấn <strong>+</strong> để tạo mới.</p>`;
+        return;
+    }
+
+    els.projectList.innerHTML = filtered.map(p => `
+        <div class="project-item ${p.id === state.currentProjectId ? 'active' : ''}"
+             data-id="${p.id}">
+            <div class="project-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            </div>
+            <div class="project-item__info">
+                <div class="project-item__name">${escapeHtml(p.name)}</div>
+                <div class="project-item__count">${p.entry_count} audio</div>
+            </div>
+        </div>
+    `).join('');
+
+    els.projectList.querySelectorAll('.project-item').forEach(el => {
+        el.addEventListener('click', () => selectProject(parseInt(el.dataset.id, 10)));
+    });
+}
+
+function selectProject(projectId) {
+    state.currentProjectId = projectId;
+    const project = state.projects.find(p => p.id === projectId);
+    if (!project) return;
+
+    // Sidebar highlight
+    renderProjectList();
+
+    // Show project view
+    els.welcomeScreen.style.display = 'none';
+    els.projectView.style.display = 'block';
+    els.projectName.textContent = project.name;
+    els.projectDesc.textContent = project.description || '';
+
+    loadEntries(projectId);
+}
+
+// ─── Entries ──────────────────────────────────────────────────────────────────
+async function loadEntries(projectId) {
+    els.entriesGrid.innerHTML = `
+        <div style="grid-column:1/-1;display:flex;justify-content:center;padding:40px">
+            <div class="dot-pulse"><span></span><span></span><span></span></div>
+        </div>`;
+    try {
+        state.entries = await api.get(`/api/projects/${projectId}/entries`);
+        renderEntries();
+    } catch (err) {
+        els.entriesGrid.innerHTML = `<p style="grid-column:1/-1;color:var(--danger);font-size:13px">Lỗi: ${escapeHtml(err.message)}</p>`;
+    }
+}
+
+function renderEntries() {
+    if (state.entries.length === 0) {
+        els.entriesGrid.innerHTML = `
+            <div class="entries-empty">
+                <span class="entries-empty__icon">♫</span>
+                <p>Chưa có audio nào trong project này.<br>Nhấn <strong>Thêm Audio</strong> để upload cặp text và audio đầu tiên.</p>
+            </div>`;
+        return;
+    }
+
+    els.entriesGrid.innerHTML = state.entries.map(entry => `
+        <div class="entry-card ${entry.id === state.currentEntryId ? 'playing' : ''}"
+             data-id="${entry.id}">
+            <div class="entry-card__header">
+                <div class="entry-card__title">${escapeHtml(entry.title)}</div>
+                <button class="entry-card__play-btn" data-id="${entry.id}" title="Phát audio">
+                    ${entry.id === state.currentEntryId && !els.audioEl.paused
+                        ? `<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`
+                        : `<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><polygon points="5 3 19 12 5 21 5 3"/></svg>`
+                    }
+                </button>
+            </div>
+            <div class="entry-card__text-preview">${escapeHtml(entry.text_content)}</div>
+            <div class="entry-card__footer">
+                <span class="entry-card__date">${formatDate(entry.created_at)}</span>
+                <button class="entry-card__delete" data-id="${entry.id}" title="Xóa">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+    // Bind play buttons
+    els.entriesGrid.querySelectorAll('.entry-card__play-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            const id = parseInt(btn.dataset.id, 10);
+            playEntry(id);
+        });
+    });
+
+    // Bind card click (also plays)
+    els.entriesGrid.querySelectorAll('.entry-card').forEach(card => {
+        card.addEventListener('click', e => {
+            if (e.target.closest('.entry-card__delete')) return;
+            playEntry(parseInt(card.dataset.id, 10));
+        });
+    });
+
+    // Bind delete buttons
+    els.entriesGrid.querySelectorAll('.entry-card__delete').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            onDeleteEntry(parseInt(btn.dataset.id, 10));
+        });
+    });
+}
+
+// ─── Playback ─────────────────────────────────────────────────────────────────
+function playEntry(entryId) {
+    const entry = state.entries.find(e => e.id === entryId);
+    if (!entry) return;
+
+    const isSame = state.currentEntryId === entryId;
+
+    if (isSame) {
+        togglePlayPause();
+        return;
+    }
+
+    state.currentEntryId = entryId;
+
+    // Load audio
+    els.audioEl.src = `http://localhost:2701${entry.audio_url}`;
+    els.audioEl.volume = parseFloat(els.volumeSlider.value);
+    els.audioEl.play().catch(console.error);
+
+    // Update player UI
+    const project = state.projects.find(p => p.id === state.currentProjectId);
+    els.playerTitle.textContent = entry.title;
+    els.playerProject.textContent = project ? project.name : '';
+    els.player.style.display = 'flex';
+
+    // Update text panel if open
+    if (els.textPanel.style.display !== 'none') {
+        showTextPanel(entry);
+    }
+
+    // Re-render entries to update playing state
+    renderEntries();
+}
+
+function togglePlayPause() {
+    if (!state.currentEntryId) return;
+    if (els.audioEl.paused) {
+        els.audioEl.play().catch(console.error);
+    } else {
+        els.audioEl.pause();
+    }
+}
+
+function setPlayIcon(playing) {
+    els.iconPlay.style.display = playing ? 'none' : 'block';
+    els.iconPause.style.display = playing ? 'block' : 'none';
+    renderEntries(); // refresh play button icons
+}
+
+function onTimeUpdate() {
+    if (!els.audioEl.duration) return;
+    const pct = (els.audioEl.currentTime / els.audioEl.duration) * 100;
+    els.progressFill.style.width = pct + '%';
+    els.progressThumb.style.left = pct + '%';
+    els.playerCurrent.textContent = formatTime(els.audioEl.currentTime);
+}
+
+function onMetadata() {
+    els.playerDuration.textContent = formatTime(els.audioEl.duration);
+}
+
+function onEnded() {
+    setPlayIcon(false);
+    els.progressFill.style.width = '0';
+    els.progressThumb.style.left = '0';
+    els.playerCurrent.textContent = '0:00';
+}
+
+function onSeek(e) {
+    if (!els.audioEl.duration) return;
+    const rect = els.progressBar.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    els.audioEl.currentTime = pct * els.audioEl.duration;
+}
+
+function formatTime(sec) {
+    if (isNaN(sec)) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+// ─── Text Panel ───────────────────────────────────────────────────────────────
+function toggleTextPanel() {
+    if (els.textPanel.style.display !== 'none') {
+        hideTextPanel();
+    } else {
+        const entry = state.entries.find(e => e.id === state.currentEntryId);
+        if (entry) showTextPanel(entry);
+    }
+}
+
+function showTextPanel(entry) {
+    els.textPanelTitle.textContent = entry.title;
+    els.textPanelBody.textContent = entry.text_content;
+    els.textPanel.style.display = 'flex';
+}
+
+function hideTextPanel() {
+    els.textPanel.style.display = 'none';
+}
+
+// ─── Project Modal ────────────────────────────────────────────────────────────
+function openProjectModal() {
+    els.formProject.reset();
+    clearFormErrors(els.formProject);
+    els.modalProject.style.display = 'flex';
+    setTimeout(() => $('project-input-name').focus(), 80);
+}
+
+function closeProjectModal() {
+    els.modalProject.style.display = 'none';
+}
+
+async function onSubmitProject(e) {
+    e.preventDefault();
+    const data = getFormData(els.formProject);
+
+    if (!data.name.trim()) {
+        showFieldError($('project-input-name'), 'Vui lòng nhập tên project');
+        return;
+    }
+
+    const btn = $('btn-submit-project');
+    btn.disabled = true;
+    btn.textContent = 'Đang tạo...';
+
+    try {
+        const project = await api.post('/api/projects', {
+            name: data.name.trim(),
+            description: data.description?.trim() || null,
+        });
+        closeProjectModal();
+        state.projects.unshift(project);
+        renderProjectList();
+        selectProject(project.id);
+    } catch (err) {
+        showFieldError($('project-input-name'), err.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Tạo Project';
+    }
+}
+
+async function onDeleteProject() {
+    if (!state.currentProjectId) return;
+    const project = state.projects.find(p => p.id === state.currentProjectId);
+    if (!confirm(`Xóa project "${project?.name}"? Tất cả audio trong project này cũng sẽ bị xóa.`)) return;
+
+    try {
+        await api.delete(`/api/projects/${state.currentProjectId}`);
+        state.projects = state.projects.filter(p => p.id !== state.currentProjectId);
+        state.currentProjectId = null;
+        state.entries = [];
+
+        // Stop playback if this project's audio was playing
+        if (state.currentEntryId) {
+            els.audioEl.pause();
+            els.audioEl.src = '';
+            state.currentEntryId = null;
+            els.player.style.display = 'none';
+            hideTextPanel();
+        }
+
+        renderProjectList();
+        els.projectView.style.display = 'none';
+        els.welcomeScreen.style.display = 'flex';
+    } catch (err) {
+        alert('Lỗi khi xóa project: ' + err.message);
+    }
+}
+
+// ─── Entry Modal ──────────────────────────────────────────────────────────────
+function openEntryModal() {
+    els.formEntry.reset();
+    clearSelectedFile();
+    clearFormErrors(els.formEntry);
+    els.entryFormError.style.display = 'none';
+    els.uploadProgress.style.display = 'none';
+    els.modalEntry.style.display = 'flex';
+    setTimeout(() => $('entry-input-title').focus(), 80);
+}
+
+function closeEntryModal() {
+    els.modalEntry.style.display = 'none';
+}
+
+async function onSubmitEntry(e) {
+    e.preventDefault();
+    const data = getFormData(els.formEntry);
+
+    if (!data.title.trim()) { showFieldError($('entry-input-title'), 'Vui lòng nhập tiêu đề'); return; }
+    if (!data.text_content.trim()) { showFieldError($('entry-input-text'), 'Vui lòng nhập nội dung text'); return; }
+    if (!state.selectedAudioFile) {
+        els.entryFormError.textContent = 'Vui lòng chọn file audio';
+        els.entryFormError.style.display = 'block';
+        return;
+    }
+
+    const btn = $('btn-submit-entry');
+    btn.disabled = true;
+    btn.textContent = 'Đang lưu...';
+    els.entryFormError.style.display = 'none';
+
+    try {
+        // 1. Upload audio file
+        els.uploadProgress.style.display = 'flex';
+        els.uploadProgressBar.style.width = '40%';
+        $('upload-progress-label').textContent = 'Đang tải file audio lên...';
+
+        const formData = new FormData();
+        formData.append('file', state.selectedAudioFile);
+        const uploadResult = await api.uploadForm('/api/upload', formData);
+
+        els.uploadProgressBar.style.width = '80%';
+        $('upload-progress-label').textContent = 'Đang lưu...';
+
+        // 2. Create entry
+        const entry = await api.post(`/api/projects/${state.currentProjectId}/entries`, {
+            title: data.title.trim(),
+            text_content: data.text_content.trim(),
+            audio_url: uploadResult.file_url,
+        });
+
+        els.uploadProgressBar.style.width = '100%';
+
+        // Update project entry count
+        const proj = state.projects.find(p => p.id === state.currentProjectId);
+        if (proj) proj.entry_count = (proj.entry_count || 0) + 1;
+        renderProjectList();
+
+        state.entries.unshift(entry);
+        renderEntries();
+
+        closeEntryModal();
+    } catch (err) {
+        els.entryFormError.textContent = 'Lỗi: ' + err.message;
+        els.entryFormError.style.display = 'block';
+        els.uploadProgress.style.display = 'none';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Lưu';
+    }
+}
+
+async function onDeleteEntry(entryId) {
+    const entry = state.entries.find(e => e.id === entryId);
+    if (!confirm(`Xóa audio "${entry?.title}"?`)) return;
+
+    try {
+        await api.delete(`/api/projects/${state.currentProjectId}/entries/${entryId}`);
+
+        if (state.currentEntryId === entryId) {
+            els.audioEl.pause();
+            els.audioEl.src = '';
+            state.currentEntryId = null;
+            els.player.style.display = 'none';
+            hideTextPanel();
+        }
+
+        state.entries = state.entries.filter(e => e.id !== entryId);
+
+        const proj = state.projects.find(p => p.id === state.currentProjectId);
+        if (proj) proj.entry_count = Math.max(0, (proj.entry_count || 1) - 1);
+        renderProjectList();
+        renderEntries();
+    } catch (err) {
+        alert('Lỗi khi xóa: ' + err.message);
+    }
+}
+
+// ─── File Upload ──────────────────────────────────────────────────────────────
+function onFileSelected(e) {
+    const file = e.target.files[0];
+    if (file) setSelectedFile(file);
+}
+
+function setSelectedFile(file) {
+    state.selectedAudioFile = file;
+    els.fileDropInner.style.display = 'none';
+    els.fileSelectedName.textContent = file.name;
+    els.fileSelected.style.display = 'flex';
+    els.entryFormError.style.display = 'none';
+}
+
+function clearSelectedFile() {
+    state.selectedAudioFile = null;
+    els.audioFileInput.value = '';
+    els.fileSelected.style.display = 'none';
+    els.fileDropInner.style.display = 'flex';
+}
+
+function setupDragDrop() {
+    const zone = els.fileDropZone;
+
+    zone.addEventListener('dragover', e => {
+        e.preventDefault();
+        zone.classList.add('dragover');
+    });
+
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+
+    zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('audio/')) {
+            setSelectedFile(file);
+        } else if (file) {
+            els.entryFormError.textContent = 'Chỉ hỗ trợ file audio (MP3, WAV, OGG, M4A)';
+            els.entryFormError.style.display = 'block';
+        }
+    });
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+function formatDate(dateString) {
+    const d = new Date(dateString);
+    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function getFormData(form) {
+    const fd = new FormData(form);
+    const data = {};
+    for (const [k, v] of fd.entries()) data[k] = v;
+    return data;
+}
+
+function clearFormErrors(form) {
+    form.querySelectorAll('.form-error').forEach(el => el.remove());
+    form.querySelectorAll('.form-input, .form-textarea').forEach(el => {
+        el.style.borderColor = '';
+    });
+}
+
+function showFieldError(input, message) {
+    // Remove existing
+    input.parentNode.querySelectorAll('.form-error').forEach(el => el.remove());
+    input.style.borderColor = 'var(--danger)';
+    const err = document.createElement('p');
+    err.className = 'form-error';
+    err.textContent = message;
+    input.parentNode.appendChild(err);
+}
+
+</script>
+</body>
+</html>

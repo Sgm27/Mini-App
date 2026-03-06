@@ -9,9 +9,10 @@
  *   api.delete('/api/items/1')
  *   api.uploadForm('/api/upload', formData)
  *
- * Upload to S3 via presigned URL:
- *   const { upload_url, file_url } = await api.post('/api/upload/presigned-url', { filename: 'photo.jpg' });
- *   await fetch(upload_url, { method: 'PUT', body: fileBlob, headers: { 'Content-Type': 'image/jpeg' } });
+ * Upload file:
+ *   const formData = new FormData();
+ *   formData.append('file', fileInput.files[0]);
+ *   const { file_url } = await api.uploadForm('/api/upload', formData);
  */
 
 const API_URL = 'http://localhost:2701';

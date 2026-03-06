@@ -57,7 +57,8 @@ def _get_or_create_role(session: boto3.Session) -> str:
 
     REQUIRED_POLICIES = [
         "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-        "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+        "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole",
+        "arn:aws:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess",
     ]
 
     try:
@@ -279,12 +280,20 @@ def deploy_project(
         client.update_function_configuration(
             FunctionName=function_name,
             Environment={"Variables": env_vars},
-            Timeout=30,
+            Timeout=60,
             MemorySize=256,
+            VpcConfig={
+                "SubnetIds": os.getenv("LAMBDA_SUBNET_IDS", "").split(","),
+                "SecurityGroupIds": [os.getenv("LAMBDA_SECURITY_GROUP_ID")],
+            },
+            FileSystemConfigs=[{
+                "Arn": os.getenv("EFS_ACCESS_POINT_ARN"),
+                "LocalMountPath": "/mnt/efs",
+            }],
         )
         waiter.wait(FunctionName=function_name)
 
-        # Get or create Function URL
+        # Get or create Function URL (no CORS here — handled by FastAPI middleware)
         try:
             url_resp = client.get_function_url_config(FunctionName=function_name)
             function_url = url_resp["FunctionUrl"]
@@ -304,9 +313,17 @@ def deploy_project(
                     Role=role_arn,
                     Code={"ImageUri": image_uri},
                     PackageType="Image",
-                    Timeout=30,
+                    Timeout=60,
                     MemorySize=256,
                     Environment={"Variables": env_vars},
+                    VpcConfig={
+                        "SubnetIds": os.getenv("LAMBDA_SUBNET_IDS", "").split(","),
+                        "SecurityGroupIds": [os.getenv("LAMBDA_SECURITY_GROUP_ID")],
+                    },
+                    FileSystemConfigs=[{
+                        "Arn": os.getenv("EFS_ACCESS_POINT_ARN"),
+                        "LocalMountPath": "/mnt/efs",
+                    }],
                 )
                 break
             except client.exceptions.InvalidParameterValueException as e:

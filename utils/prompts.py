@@ -28,7 +28,7 @@ run the app, debug via logs, and leave a working end-to-end product in the works
     - api/
       - deps.py                # shared dependencies (DB session, auth, etc.)
       - routes/                # FastAPI routers (one file per feature)
-        - upload.py            # PRE-BUILT: S3 presigned-url endpoint (POST /api/upload/presigned-url). DO NOT recreate.
+        - upload.py            # PRE-BUILT: File upload/serve endpoint (POST /api/upload, GET /api/upload/files/{filename}). DO NOT recreate.
     - core/config.py           # Settings (pydantic-settings, env aware)
     - db/
       - session.py             # SQLAlchemy engine/session (MySQL, pool_pre_ping)
@@ -78,7 +78,8 @@ Respect this layout—avoid renames unless required to fix a bug.
   - `api.put('/api/endpoint', bodyData)` — PUT with JSON body.
   - `api.delete('/api/endpoint')` — DELETE request.
   - `api.uploadForm('/api/endpoint', formData)` — Upload files with FormData.
-- The `api.js` module calls the backend directly at `http://localhost:2701`.
+- The `api.js` module defines `API_URL` and calls the backend. **API_URL is automatically updated during deployment — NEVER modify it.**
+- **CRITICAL: NEVER hardcode `http://localhost:2701` or any backend URL in `app.js`, `index.html`, or anywhere else.** When you need to build a full URL to a backend resource (e.g., image src, audio src, file link), always use `API_URL` from `api.js`: e.g., `` `${API_URL}${song.file_url}` ``. The `API_URL` variable is globally available via `window`.
 - Prefer real backend logic over mocks; only mock if unavoidable and explain why.
 
 ### 2.5 Validation, errors, and states
@@ -122,12 +123,14 @@ Respect this layout—avoid renames unless required to fix a bug.
     - **NEVER** use Python code (pymysql, sqlalchemy CLI, scripts) or Bash commands (`mysql` CLI, shell pipes) to directly query, modify, or inspect the database.
     - This applies to ALL database operations: creating tables, running migrations, seeding data, checking schema, querying data, debugging, etc.
     - Write SQL migration files to `database/` as before, but **execute** them via `mcp__mysql__execute`, NOT via `mysql` CLI or Python scripts.
-- **File/Binary storage — S3 ONLY (CRITICAL):**
-  - **ALL binary files** (images, PDFs, audio, video, documents, etc.) **MUST be stored in S3**, never in the local filesystem or database BLOBs.
-  - A presigned-url upload endpoint is **already provided** at `POST /api/upload/presigned-url`. DO NOT recreate or duplicate it.
-  - **Frontend upload flow**: call `api.post('/api/upload/presigned-url', { filename })` to get `{ upload_url, file_url, key }`, then `PUT` the raw file to `upload_url`, and save `file_url` (the public S3 URL) in the database as a text field.
-  - Database columns for files should store the **S3 URL string** (e.g., `image_url VARCHAR(500)`), NOT binary data.
-  - The `S3_BUCKET_NAME` setting is already in `core/config.py`; ensure `.env.example` has it listed.
+- **File/Binary storage — EFS (CRITICAL):**
+  - **ALL binary files** (images, PDFs, audio, video, documents, etc.) **MUST be stored on EFS**, never in database BLOBs.
+  - Upload and serve endpoints are **already provided**. DO NOT recreate or duplicate them:
+    - `POST /api/upload` — accepts multipart FormData, saves file to EFS, returns `{ file_url, filename }`.
+    - `GET /api/upload/files/{filename}` — serves file from EFS.
+  - **Frontend upload flow**: use `api.uploadForm('/api/upload', formData)` to get `{ file_url }`, then save `file_url` (a relative path like `/api/upload/files/xxx.jpg`) in the database as a text field.
+  - Database columns for files should store the **relative URL string** (e.g., `image_url VARCHAR(500)`), NOT binary data.
+  - The `UPLOAD_DIR` setting is already in `core/config.py`; it points to the EFS mount path.
 - Background tasks: prefer FastAPI `BackgroundTasks`; avoid heavyweight daemons.
 - Tests: pytest + httpx `TestClient`; cover happy path + error cases for new endpoints/services.
 - Error handling: raise HTTPException with clear messages; guard against missing data; wrap commit/rollback properly.

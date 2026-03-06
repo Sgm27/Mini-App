@@ -1,41 +1,37 @@
+import os
 import uuid
 
-import boto3
-from botocore.config import Config
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 
 from app.core.config import settings
 
 router = APIRouter(prefix="/upload")
 
-REGION = settings.s3_region or "ap-southeast-1"
-s3 = boto3.client(
-    "s3",
-    region_name=REGION,
-    config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
-)
-BUCKET = settings.s3_bucket_name
+UPLOAD_DIR = settings.upload_dir
 
 
-class PresignedUrlRequest(BaseModel):
-    filename: str
+@router.post("")
+async def upload_file(file: UploadFile = File(...)):
+    """Upload a file to EFS storage."""
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+    ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else ""
+    name = f"{uuid.uuid4().hex}.{ext}" if ext else uuid.uuid4().hex
+
+    path = os.path.join(UPLOAD_DIR, name)
+    content = await file.read()
+    with open(path, "wb") as f:
+        f.write(content)
+
+    file_url = f"/api/upload/files/{name}"
+    return {"file_url": file_url, "filename": name}
 
 
-@router.post("/presigned-url")
-async def get_presigned_url(body: PresignedUrlRequest):
-    filename = body.filename
-    if not BUCKET:
-        raise HTTPException(status_code=500, detail="S3_BUCKET_NAME is not configured")
-
-    ext = filename.rsplit(".", 1)[-1] if "." in filename else ""
-    key = f"uploads/{uuid.uuid4().hex}.{ext}" if ext else f"uploads/{uuid.uuid4().hex}"
-
-    upload_url = s3.generate_presigned_url(
-        "put_object",
-        Params={"Bucket": BUCKET, "Key": key},
-        ExpiresIn=3600,
-    )
-
-    file_url = f"https://{BUCKET}.s3.{REGION}.amazonaws.com/{key}"
-    return {"upload_url": upload_url, "file_url": file_url, "key": key}
+@router.get("/files/{filename}")
+async def get_file(filename: str):
+    """Serve a file from EFS storage."""
+    path = os.path.join(UPLOAD_DIR, filename)
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(path)

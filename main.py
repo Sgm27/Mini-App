@@ -135,7 +135,7 @@ def handle_new_project(project_name: str):
     SESSION_ID = None
 
     # Save project info JSON
-    info_file = os.path.join(BASE_DIR, f"{project_name}_project.json")
+    info_file = os.path.join(BASE_DIR, "project-config", f"{project_name}_project.json")
     with open(info_file, "w") as f:
         json.dump(info.to_dict(), f, indent=2)
 
@@ -143,34 +143,47 @@ def handle_new_project(project_name: str):
     print(f"  Database   : {info.db_name}")
     print(f"  MySQL Host : {info.mysql_host}:{info.mysql_port}")
     print(f"  Workspace  : {WORKSPACE}/{project_name}/")
-    print(f"  Project info : {project_name}_project.json")
+    print(f"  Project info : project-config/{project_name}_project.json")
     print(f"\nChat is now pointed at the new project. Start building!\n")
 
 
 def _update_api_js(project_dir: str, function_url: str) -> bool:
-    """Find api.js in the project frontend and update API_URL to the Lambda function URL."""
-    # Remove trailing slash from function URL
-    url = function_url.rstrip("/")
+    """Update API_URL and replace hardcoded localhost:2701 in all frontend files."""
+    import re
 
-    api_js_path = os.path.join(project_dir, "frontend", "js", "api.js")
-    if not os.path.exists(api_js_path):
+    url = function_url.rstrip("/")
+    updated = False
+
+    frontend_dir = os.path.join(project_dir, "frontend")
+    if not os.path.isdir(frontend_dir):
         return False
 
-    with open(api_js_path, "r", encoding="utf-8") as f:
-        content = f.read()
+    for root, _dirs, files in os.walk(frontend_dir):
+        for fname in files:
+            if not fname.endswith((".js", ".html", ".css")):
+                continue
+            fpath = os.path.join(root, fname)
+            with open(fpath, "r", encoding="utf-8") as f:
+                content = f.read()
 
-    import re
-    new_content = re.sub(
-        r"const\s+API_URL\s*=\s*['\"].*?['\"]",
-        f"const API_URL = '{url}'",
-        content,
-    )
+            new_content = content
 
-    if new_content != content:
-        with open(api_js_path, "w", encoding="utf-8") as f:
-            f.write(new_content)
-        return True
-    return False
+            # Replace API_URL declaration
+            new_content = re.sub(
+                r"const\s+API_URL\s*=\s*['\"].*?['\"]",
+                f"const API_URL = '{url}'",
+                new_content,
+            )
+
+            # Replace any hardcoded http://localhost:2701 references
+            new_content = new_content.replace("http://localhost:2701", url)
+
+            if new_content != content:
+                with open(fpath, "w", encoding="utf-8") as f:
+                    f.write(new_content)
+                updated = True
+
+    return updated
 
 
 def handle_deploy():
@@ -238,7 +251,7 @@ async def chat(prompt: str):
         permission_mode="bypassPermissions",
         setting_sources=["user", "project", "local"],
         model="sonnet",
-        effort="low",
+        effort="medium",
     )
 
     if SESSION_ID:

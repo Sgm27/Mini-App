@@ -1,9 +1,0 @@
-{
-  "role_name": "lambda-basic-execution-role",
-  "role_arn": "arn:aws:iam::270717776915:role/lambda-basic-execution-role",
-  "created": false,
-  "attached_policies": [
-    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
-    "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-  ]
-}
