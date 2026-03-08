@@ -1,10 +1,10 @@
-# Mini-App-Lambda
+# Mini-App
 
 > AI-powered full-stack web application builder — describe what you want in natural language, get a deployed app on AWS Lambda.
 
 ## Overview
 
-Mini-App-Lambda is a CLI tool that lets you build and deploy full-stack web applications through conversation. It combines the **Claude Agent SDK** with an automated **AWS Lambda deployment pipeline** to go from idea to production URL in minutes.
+Mini-App is a CLI tool that lets you build and deploy full-stack web applications through conversation. It combines the **Claude Agent SDK** with an automated **AWS Lambda deployment pipeline** to go from idea to production URL in minutes.
 
 **What it does:**
 1. You describe the app you want in plain language
@@ -54,7 +54,7 @@ Mini-App-Lambda is a CLI tool that lets you build and deploy full-stack web appl
 
 ```bash
 # Clone and install dependencies
-git clone <repo-url> && cd Mini-App-Lambda
+git clone <repo-url> && cd Mini-App
 pip install -r requirements.txt
 
 # Configure credentials
@@ -106,7 +106,7 @@ Claude: (autonomously writes backend routes, models, schemas, frontend UI, datab
 ## Project Structure
 
 ```
-Mini-App-Lambda/
+Mini-App/
 │
 ├── main.py                       # CLI entrypoint — chat loop, session management, auto-deploy
 ├── setup_infra.py                # One-time AWS provisioning (VPC, RDS, EFS, IAM, Security Groups)
