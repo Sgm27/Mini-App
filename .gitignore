@@ -72,3 +72,8 @@ vps-config/*
 # Log files
 logs/*
 !logs/.gitkeep
+
+# Generated outputs
+merged_index/
+project-config/
+infra_config.json
