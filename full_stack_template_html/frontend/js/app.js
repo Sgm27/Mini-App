@@ -1,10 +1,11 @@
 /**
  * Main Application Module
- * Handles UI interactions and application logic
+ * Handles UI interactions and application logic (mobile-first)
  */
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('App initialized');
+    initBottomNav();
     init();
 });
 
@@ -19,6 +20,34 @@ async function init() {
     } catch (error) {
         console.warn('Backend not available:', error.message);
     }
+}
+
+/**
+ * Initialize bottom navigation tab switching
+ */
+function initBottomNav() {
+    const navItems = document.querySelectorAll('.bottom-nav__item');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            // Remove active from all
+            navItems.forEach(i => i.classList.remove('bottom-nav__item--active'));
+            // Add active to clicked
+            item.classList.add('bottom-nav__item--active');
+
+            const tab = item.dataset.tab;
+            onTabChange(tab);
+        });
+    });
+}
+
+/**
+ * Handle tab change
+ * @param {string} tab - Tab identifier
+ */
+function onTabChange(tab) {
+    console.log('Tab changed:', tab);
+    // AI: Implement tab-specific content loading here
 }
 
 /**
@@ -50,13 +79,58 @@ function showError(container, message) {
  * Show empty state in a container
  * @param {HTMLElement} container - Target container
  * @param {string} message - Empty state message
+ * @param {string} icon - Optional icon/emoji for empty state
  */
-function showEmpty(container, message = 'No data available') {
+function showEmpty(container, message = 'No data available', icon = '') {
     container.innerHTML = `
         <div class="empty-state">
+            ${icon ? `<div class="empty-state__icon">${icon}</div>` : ''}
             <p>${escapeHtml(message)}</p>
         </div>
     `;
+}
+
+/**
+ * Open a bottom sheet modal
+ * @param {string} content - HTML content for the sheet
+ * @returns {HTMLElement} The overlay element (for closing)
+ */
+function openBottomSheet(content) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="bottom-sheet">
+            <div class="bottom-sheet__handle"></div>
+            ${content}
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Trigger animation
+    requestAnimationFrame(() => {
+        overlay.classList.add('modal-overlay--active');
+    });
+
+    // Close on overlay tap (not sheet)
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            closeBottomSheet(overlay);
+        }
+    });
+
+    return overlay;
+}
+
+/**
+ * Close a bottom sheet modal
+ * @param {HTMLElement} overlay - The overlay element
+ */
+function closeBottomSheet(overlay) {
+    overlay.classList.remove('modal-overlay--active');
+    overlay.addEventListener('transitionend', () => {
+        overlay.remove();
+    }, { once: true });
 }
 
 /**

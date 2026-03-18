@@ -14,3 +14,6 @@ mysql-connector-python
 
 # AWS (Lambda deploy)
 boto3
+
+# Excel handling
+openpyxl

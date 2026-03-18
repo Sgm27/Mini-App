@@ -1,5 +1,5 @@
 /* ============================================
-   BASE TEMPLATE — Clean structural foundation.
+   BASE TEMPLATE — Mobile-first structural foundation.
    The AI MUST replace this with a distinctive,
    project-specific design for each new app.
    ============================================ */
@@ -9,6 +9,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* ============================================
@@ -31,6 +32,9 @@
     --color-success: #22c55e;
     --color-error: #ef4444;
     --color-warning: #f59e0b;
+    --color-nav-bg: #ffffff;
+    --color-nav-active: #333;
+    --color-nav-inactive: #999;
 
     /* Spacing */
     --space-xs: 4px;
@@ -41,20 +45,35 @@
     --space-2xl: 32px;
     --space-3xl: 48px;
 
+    /* Mobile touch targets — minimum 44x44px per Apple HIG */
+    --touch-target-min: 44px;
+    --touch-target-comfortable: 48px;
+
     /* Border Radius */
-    --radius-sm: 6px;
-    --radius-md: 10px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
     --radius-lg: 16px;
+    --radius-xl: 24px;
     --radius-full: 999px;
 
     /* Transitions */
     --transition-fast: 150ms ease;
     --transition-normal: 250ms ease;
     --transition-slow: 400ms ease-out;
+
+    /* Safe areas (notch, home indicator) */
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
+
+    /* Layout */
+    --top-bar-height: 56px;
+    --bottom-nav-height: 56px;
 }
 
 /* ============================================
-   BASE LAYOUT
+   APP SHELL — Mobile full-screen layout
    ============================================ */
 
 html, body {
@@ -63,34 +82,233 @@ html, body {
     font-family: var(--font-body);
     color: var(--color-text);
     background: var(--color-background);
-    line-height: 1.6;
+    line-height: 1.5;
+    font-size: 16px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+    overflow: hidden;
 }
 
-body {
+.app-shell {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
-}
-
-main {
-    flex: 1;
-}
-
-.container {
+    height: 100vh;
+    height: 100dvh;
     width: 100%;
-    max-width: 1200px;
+    max-width: 430px;
     margin: 0 auto;
-    padding: 0 var(--space-lg);
+    position: relative;
+    overflow: hidden;
 }
 
-@media (min-width: 640px) {
-    .container { padding: 0 var(--space-xl); }
+/* ============================================
+   TOP BAR
+   ============================================ */
+
+.top-bar {
+    flex-shrink: 0;
+    height: var(--top-bar-height);
+    padding-top: var(--safe-area-top);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: var(--space-lg);
+    padding-right: var(--space-lg);
+    background: var(--color-background);
+    border-bottom: 1px solid var(--color-border);
+    position: relative;
+    z-index: 10;
 }
 
-@media (min-width: 1024px) {
-    .container { padding: 0 var(--space-2xl); }
+.top-bar__title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.top-bar__action {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* ============================================
+   SCROLLABLE CONTENT AREA
+   ============================================ */
+
+.content-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--space-lg);
+    padding-bottom: calc(var(--space-lg) + var(--space-xl));
+}
+
+/* ============================================
+   BOTTOM NAVIGATION (Tab Bar)
+   ============================================ */
+
+.bottom-nav {
+    flex-shrink: 0;
+    height: calc(var(--bottom-nav-height) + var(--safe-area-bottom));
+    padding-bottom: var(--safe-area-bottom);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: var(--color-nav-bg);
+    border-top: 1px solid var(--color-border);
+    position: relative;
+    z-index: 10;
+}
+
+.bottom-nav__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: var(--touch-target-min);
+    padding: var(--space-xs) 0;
+    background: none;
+    border: none;
+    color: var(--color-nav-inactive);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav__item--active {
+    color: var(--color-nav-active);
+}
+
+.bottom-nav__icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.bottom-nav__label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+/* ============================================
+   MOBILE CARD COMPONENT
+   ============================================ */
+
+.card {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+    transition: transform var(--transition-fast);
+}
+
+.card:active {
+    transform: scale(0.98);
+}
+
+/* ============================================
+   MOBILE-FRIENDLY BUTTONS
+   ============================================ */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--touch-target-comfortable);
+    padding: var(--space-md) var(--space-xl);
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.btn:active {
+    transform: scale(0.96);
+    opacity: 0.85;
+}
+
+.btn--primary {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+.btn--secondary {
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.btn--full {
+    width: 100%;
+}
+
+.btn--icon {
+    width: var(--touch-target-comfortable);
+    height: var(--touch-target-comfortable);
+    padding: 0;
+    border-radius: var(--radius-full);
+}
+
+/* ============================================
+   MOBILE-FRIENDLY FORM INPUTS
+   ============================================ */
+
+.form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xs);
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+    width: 100%;
+    min-height: var(--touch-target-comfortable);
+    padding: var(--space-md) var(--space-lg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    color: var(--color-text);
+    background: var(--color-background);
+    transition: border-color var(--transition-fast);
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.form-textarea {
+    min-height: 100px;
+    resize: vertical;
 }
 
 /* ============================================
@@ -102,12 +320,12 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-2xl);
+    padding: var(--space-3xl);
 }
 
 .spinner {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     border: 3px solid var(--color-border);
     border-top-color: var(--color-primary);
     border-radius: 50%;
@@ -129,14 +347,94 @@ main {
 
 .empty-state {
     text-align: center;
-    padding: var(--space-2xl);
+    padding: var(--space-3xl) var(--space-lg);
     color: var(--color-text-muted);
+}
+
+.empty-state__icon {
+    font-size: 48px;
+    margin-bottom: var(--space-md);
+    opacity: 0.5;
 }
 
 .form-error {
     color: var(--color-error);
     font-size: 12px;
     margin-top: var(--space-xs);
+}
+
+/* ============================================
+   MOBILE LIST COMPONENT
+   ============================================ */
+
+.list {
+    list-style: none;
+}
+
+.list-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    min-height: var(--touch-target-comfortable);
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    transition: background var(--transition-fast);
+}
+
+.list-item:active {
+    background: var(--color-surface);
+}
+
+.list-item:last-child {
+    border-bottom: none;
+}
+
+/* ============================================
+   MOBILE MODAL / BOTTOM SHEET
+   ============================================ */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-normal), visibility var(--transition-normal);
+}
+
+.modal-overlay--active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.bottom-sheet {
+    width: 100%;
+    max-width: 430px;
+    max-height: 85vh;
+    background: var(--color-background);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: var(--space-lg);
+    padding-bottom: calc(var(--space-lg) + var(--safe-area-bottom));
+    transform: translateY(100%);
+    transition: transform var(--transition-slow);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.modal-overlay--active .bottom-sheet {
+    transform: translateY(0);
+}
+
+.bottom-sheet__handle {
+    width: 36px;
+    height: 4px;
+    background: var(--color-border);
+    border-radius: var(--radius-full);
+    margin: 0 auto var(--space-lg);
 }
 
 /* ============================================
@@ -198,3 +496,17 @@ main {
 
 /* Transitions */
 .transition { transition: all var(--transition-normal); }
+
+/* Truncation (mobile text overflow) */
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

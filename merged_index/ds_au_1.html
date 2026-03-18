@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="Quản lý project audio và text cho dataset">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>AudioDS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+/* ============================================
+   AUDIODS — Dark Audio Lab Theme
+   Syne (display) + Space Mono (body/code)
+   ============================================ */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'Space Mono', monospace;
+
+    /* Dark audio-lab palette */
+    --color-bg: #0a0a0f;
+    --color-surface: #13131a;
+    --color-surface-2: #1c1c26;
+    --color-surface-3: #252533;
+    --color-border: #2a2a3a;
+    --color-border-light: #33334a;
+
+    --color-accent: #e8ff47;       /* electric lime — the one unforgettable color */
+    --color-accent-dim: rgba(232, 255, 71, 0.12);
+    --color-accent-glow: rgba(232, 255, 71, 0.3);
+
+    --color-text: #f0f0f8;
+    --color-text-muted: #6b6b88;
+    --color-text-dim: #3a3a52;
+
+    --color-success: #4ade80;
+    --color-error: #f87171;
+    --color-warning: #fbbf24;
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-2xl: 32px;
+    --space-3xl: 48px;
+
+    /* Touch targets */
+    --touch-target-min: 44px;
+    --touch-target-comfortable: 48px;
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --radius-full: 999px;
+
+    /* Transitions */
+    --transition-fast: 140ms ease;
+    --transition-normal: 240ms ease;
+    --transition-slow: 380ms cubic-bezier(0.32, 0.72, 0, 1);
+
+    /* Safe areas */
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+    /* Layout */
+    --top-bar-height: 56px;
+}
+
+/* ============================================
+   BASE
+   ============================================ */
+
+html, body {
+    height: 100%;
+    width: 100%;
+    font-family: var(--font-body);
+    color: var(--color-text);
+    background: var(--color-bg);
+    line-height: 1.5;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+    overflow: hidden;
+}
+
+/* ============================================
+   APP SHELL
+   ============================================ */
+
+.app-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    background: var(--color-bg);
+}
+
+/* Subtle scanline overlay for depth */
+.app-shell::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255,255,255,0.012) 2px,
+        rgba(255,255,255,0.012) 4px
+    );
+    pointer-events: none;
+    z-index: 200;
+    max-width: 430px;
+    margin: 0 auto;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* ============================================
+   TOP BAR
+   ============================================ */
+
+.top-bar {
+    flex-shrink: 0;
+    height: var(--top-bar-height);
+    padding-top: var(--safe-area-top);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: var(--space-lg);
+    padding-right: var(--space-sm);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    position: relative;
+    z-index: 10;
+}
+
+.top-bar__left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex: 1;
+    min-width: 0;
+}
+
+.top-bar__back {
+    display: none;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all var(--transition-fast);
+}
+
+.top-bar__back:active {
+    background: var(--color-surface-3);
+    color: var(--color-text);
+    transform: scale(0.94);
+}
+
+.top-bar__back.visible {
+    display: flex;
+}
+
+.top-bar__title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.top-bar__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-shrink: 0;
+}
+
+.top-bar__btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-accent);
+    border: none;
+    border-radius: var(--radius-md);
+    color: #0a0a0f;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.top-bar__btn:active {
+    transform: scale(0.92);
+    background: #d4eb3d;
+}
+
+/* ============================================
+   CONTENT AREA
+   ============================================ */
+
+.content-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--space-lg);
+    padding-bottom: calc(var(--space-lg) + env(safe-area-inset-bottom, 16px));
+}
+
+/* ============================================
+   PROJECT CARDS
+   ============================================ */
+
+.projects-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.project-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+}
+
+.project-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--color-accent);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform var(--transition-normal);
+}
+
+.project-card:active {
+    transform: scale(0.98);
+    background: var(--color-surface-2);
+}
+
+.project-card:active::before {
+    transform: scaleY(1);
+}
+
+.project-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-md);
+    margin-bottom: var(--space-sm);
+}
+
+.project-card__name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.3;
+    flex: 1;
+}
+
+.project-card__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--color-accent-dim);
+    border: 1px solid var(--color-accent-glow);
+    color: var(--color-accent);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+}
+
+.project-card__desc {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: var(--space-md);
+}
+
+.project-card__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    font-size: 11px;
+    color: var(--color-text-dim);
+    letter-spacing: 0.03em;
+}
+
+.project-card__meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ============================================
+   SECTION HEADER (in project detail)
+   ============================================ */
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.section-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.section-count {
+    font-size: 12px;
+    color: var(--color-text-dim);
+    font-family: var(--font-body);
+}
+
+/* ============================================
+   PAIR CARDS (audio+text)
+   ============================================ */
+
+.pairs-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.pair-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.pair-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+}
+
+.pair-card__name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pair-card__delete-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--color-text-dim);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.pair-card__delete-btn:active {
+    background: rgba(248, 113, 113, 0.12);
+    color: var(--color-error);
+}
+
+.pair-card__audio {
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+
+.pair-card__audio audio {
+    width: 100%;
+    height: 36px;
+    filter: invert(1) hue-rotate(180deg) saturate(0.5);
+    border-radius: var(--radius-sm);
+}
+
+.pair-card__text {
+    padding: var(--space-md) var(--space-lg);
+}
+
+.pair-card__text-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: var(--space-xs);
+}
+
+.pair-card__text-content {
+    font-size: 14px;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ============================================
+   UPLOAD ZONE
+   ============================================ */
+
+.upload-zone {
+    border: 2px dashed var(--color-border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    background: var(--color-surface-2);
+    position: relative;
+}
+
+.upload-zone:active,
+.upload-zone.drag-over {
+    border-color: var(--color-accent);
+    background: var(--color-accent-dim);
+}
+
+.upload-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+
+.upload-zone__icon {
+    font-size: 28px;
+    margin-bottom: var(--space-sm);
+    display: block;
+}
+
+.upload-zone__text {
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+.upload-zone__text strong {
+    color: var(--color-accent);
+    font-weight: 700;
+}
+
+.upload-zone__preview {
+    margin-top: var(--space-md);
+    font-size: 12px;
+    color: var(--color-accent);
+    font-family: var(--font-body);
+    word-break: break-all;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    min-height: var(--touch-target-comfortable);
+    padding: var(--space-md) var(--space-xl);
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    user-select: none;
+    letter-spacing: 0.01em;
+}
+
+.btn:active {
+    transform: scale(0.96);
+}
+
+.btn--primary {
+    background: var(--color-accent);
+    color: #0a0a0f;
+}
+
+.btn--primary:active {
+    background: #d4eb3d;
+}
+
+.btn--secondary {
+    background: var(--color-surface-3);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.btn--secondary:active {
+    background: var(--color-surface-2);
+}
+
+.btn--danger {
+    background: rgba(248, 113, 113, 0.12);
+    color: var(--color-error);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.btn--danger:active {
+    background: rgba(248, 113, 113, 0.2);
+}
+
+.btn--full {
+    width: 100%;
+}
+
+.btn:disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* ============================================
+   FORM
+   ============================================ */
+
+.form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.form-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-sm);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.form-input,
+.form-textarea {
+    width: 100%;
+    min-height: var(--touch-target-comfortable);
+    padding: var(--space-md) var(--space-lg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--color-text);
+    background: var(--color-surface-2);
+    transition: border-color var(--transition-fast);
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-dim);
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+    color: var(--color-text-dim);
+}
+
+.form-textarea {
+    min-height: 120px;
+    resize: none;
+    line-height: 1.6;
+}
+
+.form-error {
+    color: var(--color-error);
+    font-size: 12px;
+    margin-top: var(--space-xs);
+}
+
+/* ============================================
+   STATES (loading, error, empty)
+   ============================================ */
+
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-3xl);
+    gap: var(--space-lg);
+}
+
+.spinner {
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-text {
+    font-size: 13px;
+    color: var(--color-text-dim);
+    letter-spacing: 0.05em;
+}
+
+.error-message {
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+    background: rgba(248, 113, 113, 0.08);
+    color: var(--color-error);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    font-size: 14px;
+    margin: var(--space-lg) 0;
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--space-3xl) var(--space-lg);
+    color: var(--color-text-muted);
+}
+
+.empty-state__icon {
+    font-size: 40px;
+    margin-bottom: var(--space-md);
+    opacity: 0.35;
+    display: block;
+}
+
+.empty-state__title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-sm);
+}
+
+.empty-state__text {
+    font-size: 13px;
+    color: var(--color-text-dim);
+    line-height: 1.6;
+}
+
+/* ============================================
+   BOTTOM SHEET / MODAL
+   ============================================ */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-normal), visibility var(--transition-normal);
+    backdrop-filter: blur(2px);
+}
+
+.modal-overlay--active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.bottom-sheet {
+    width: 100%;
+    max-width: 430px;
+    max-height: 88vh;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-bottom: none;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: var(--space-md) var(--space-lg) calc(var(--space-lg) + var(--safe-area-bottom));
+    transform: translateY(100%);
+    transition: transform var(--transition-slow);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.modal-overlay--active .bottom-sheet {
+    transform: translateY(0);
+}
+
+.bottom-sheet__handle {
+    width: 32px;
+    height: 3px;
+    background: var(--color-border-light);
+    border-radius: var(--radius-full);
+    margin: 0 auto var(--space-xl);
+}
+
+.bottom-sheet__title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--color-text);
+    margin-bottom: var(--space-xl);
+    letter-spacing: -0.02em;
+}
+
+/* ============================================
+   PROGRESS BAR (upload)
+   ============================================ */
+
+.upload-progress {
+    margin-top: var(--space-md);
+    display: none;
+}
+
+.upload-progress.visible {
+    display: block;
+}
+
+.upload-progress__bar {
+    height: 3px;
+    background: var(--color-border);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.upload-progress__fill {
+    height: 100%;
+    background: var(--color-accent);
+    border-radius: var(--radius-full);
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.upload-progress__text {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: var(--space-xs);
+    text-align: center;
+}
+
+/* ============================================
+   PROJECT INFO HEADER (detail view)
+   ============================================ */
+
+.project-info {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.project-info__name {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--color-text);
+    letter-spacing: -0.02em;
+    margin-bottom: var(--space-xs);
+}
+
+.project-info__desc {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+.project-info__stats {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+}
+
+.project-info__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.project-info__stat-value {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--color-accent);
+    line-height: 1;
+}
+
+.project-info__stat-label {
+    font-size: 10px;
+    color: var(--color-text-dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.hidden { display: none !important; }
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.flex-1 { flex: 1; }
+.gap-2 { gap: var(--space-sm); }
+.gap-3 { gap: var(--space-md); }
+.gap-4 { gap: var(--space-lg); }
+.mt-2 { margin-top: var(--space-sm); }
+.mt-4 { margin-top: var(--space-lg); }
+.mb-4 { margin-bottom: var(--space-lg); }
+.mb-6 { margin-bottom: var(--space-xl); }
+.w-full { width: 100%; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+</style>
+</head>
+<body>
+    <div class="app-shell">
+        <!-- Top Bar -->
+        <header class="top-bar" id="top-bar">
+            <div class="top-bar__left">
+                <button class="top-bar__back" id="back-btn" onclick="goBackToProjects()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <h1 class="top-bar__title" id="top-bar-title">AudioDS</h1>
+            </div>
+            <div class="top-bar__actions" id="top-bar-actions">
+                <button class="top-bar__btn" id="add-btn" onclick="handleAddBtn()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Scrollable Content Area -->
+        <main class="content-area">
+            <section id="content"></section>
+        </main>
+    </div>
+
+    <script>
+/**
+ * API Helper Module
+ * Handles all communication with the backend
+ *
+ * Usage in app.js:
+ *   api.get('/api/health')
+ *   api.post('/api/items', { name: 'Item 1' })
+ *   api.put('/api/items/1', { name: 'Updated' })
+ *   api.delete('/api/items/1')
+ *   api.uploadForm('/api/upload', formData)
+ *
+ * Upload file:
+ *   const formData = new FormData();
+ *   formData.append('file', fileInput.files[0]);
+ *   const { file_url } = await api.uploadForm('/api/upload', formData);
+ */
+
+const API_URL = 'https://zxfxkzuvg7s3s5btgebnqjfjxq0wrchz.lambda-url.ap-southeast-1.on.aws';
+
+/**
+ * Process response: check status and parse JSON
+ */
+async function processResponse(response) {
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.detail || data?.error || `HTTP ${response.status}`
+    );
+  }
+
+  if (data && data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
+const api = {
+  /**
+   * Make a GET request
+   * @param {string} path - API path (e.g., '/api/health')
+   * @param {object} params - Query parameters
+   * @returns {Promise<any>} Response data
+   */
+  async get(path, params = {}) {
+    const url = new URL(`${API_URL}${path}`);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        url.searchParams.append(key, value);
+      }
+    });
+
+    const response = await fetch(url.toString());
+    return processResponse(response);
+  },
+
+  /**
+   * Make a POST request
+   * @param {string} path - API path (e.g., '/api/items')
+   * @param {object} body - Request body
+   * @returns {Promise<any>} Response data
+   */
+  async post(path, body = {}) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return processResponse(response);
+  },
+
+  /**
+   * Make a PUT request
+   * @param {string} path - API path (e.g., '/api/items/1')
+   * @param {object} body - Request body
+   * @returns {Promise<any>} Response data
+   */
+  async put(path, body = {}) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return processResponse(response);
+  },
+
+  /**
+   * Make a DELETE request
+   * @param {string} path - API path (e.g., '/api/items/1')
+   * @param {object} body - Optional request body
+   * @returns {Promise<any>} Response data
+   */
+  async delete(path, body = null) {
+    const options = { method: 'DELETE' };
+    if (body) {
+      options.headers = { 'Content-Type': 'application/json' };
+      options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(`${API_URL}${path}`, options);
+    return processResponse(response);
+  },
+
+  /**
+   * Upload files with FormData
+   * @param {string} path - API path (e.g., '/api/upload')
+   * @param {FormData} formData - FormData object with files and fields
+   * @returns {Promise<any>} Response data
+   */
+  async uploadForm(path, formData) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      body: formData,
+    });
+    return processResponse(response);
+  },
+};
+
+// Export for use in other modules
+window.api = api;
+
+</script>
+    <script>
+/**
+ * AudioDS — Audio Dataset Manager
+ * Main application logic
+ */
+
+// ─── App State ────────────────────────────────────────────────────────────────
+
+let currentView = 'projects'; // 'projects' | 'project-detail'
+let currentProject = null;
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadProjects();
+});
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+
+function setProjectsView() {
+    currentView = 'projects';
+    currentProject = null;
+    document.getElementById('top-bar-title').textContent = 'AudioDS';
+    document.getElementById('back-btn').classList.remove('visible');
+}
+
+function setDetailView(project) {
+    currentView = 'project-detail';
+    currentProject = project;
+    const name = project.name.length > 18 ? project.name.slice(0, 18) + '\u2026' : project.name;
+    document.getElementById('top-bar-title').textContent = name;
+    document.getElementById('back-btn').classList.add('visible');
+}
+
+function goBackToProjects() {
+    setProjectsView();
+    loadProjects();
+}
+
+function handleAddBtn() {
+    if (currentView === 'projects') {
+        showCreateProjectSheet();
+    } else {
+        showUploadPairSheet();
+    }
+}
+
+// ─── Projects List ────────────────────────────────────────────────────────────
+
+async function loadProjects() {
+    const container = document.getElementById('content');
+    showLoading(container);
+
+    try {
+        const projects = await api.get('/api/projects');
+        if (projects.length === 0) {
+            showProjectsEmpty(container);
+            return;
+        }
+        renderProjects(container, projects);
+    } catch (err) {
+        container.innerHTML = '<div class="error-message">' + escapeHtml(err.message) + '</div>';
+    }
+}
+
+function renderProjects(container, projects) {
+    container.innerHTML = '<div class="projects-grid">' +
+        projects.map(p => renderProjectCard(p)).join('') +
+        '</div>';
+
+    container.querySelectorAll('.project-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const pid = parseInt(card.dataset.id);
+            const project = projects.find(p => p.id === pid);
+            openProject(project);
+        });
+    });
+}
+
+function renderProjectCard(p) {
+    const date = formatDate(p.created_at);
+    const pairText = p.pair_count === 1 ? '1 pair' : p.pair_count + ' pairs';
+    return '<div class="project-card" data-id="' + p.id + '">' +
+        '<div class="project-card__header">' +
+            '<div class="project-card__name">' + escapeHtml(p.name) + '</div>' +
+            '<div class="project-card__badge">' +
+                '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>' +
+                ' ' + pairText +
+            '</div>' +
+        '</div>' +
+        (p.description ? '<div class="project-card__desc">' + escapeHtml(p.description) + '</div>' : '') +
+        '<div class="project-card__meta">' +
+            '<div class="project-card__meta-item">' +
+                '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' +
+                ' ' + date +
+            '</div>' +
+        '</div>' +
+    '</div>';
+}
+
+function showProjectsEmpty(container) {
+    container.innerHTML =
+        '<div class="empty-state">' +
+            '<span class="empty-state__icon">\uD83C\uDF99</span>' +
+            '<div class="empty-state__title">Ch\u01B0a c\xF3 project n\xE0o</div>' +
+            '<div class="empty-state__text">Nh\u1EA5n <strong style="color:var(--color-accent)">+</strong> \u0111\u1EC3 t\u1EA1o project \u0111\u1EA7u ti\xEAn</div>' +
+        '</div>';
+}
+
+// ─── Create Project ────────────────────────────────────────────────────────────
+
+function showCreateProjectSheet() {
+    const overlay = openBottomSheet(
+        '<div class="bottom-sheet__title">Project m\u1EDBi</div>' +
+        '<form id="create-project-form">' +
+            '<div class="form-group">' +
+                '<label class="form-label" for="proj-name">T\xEAn project</label>' +
+                '<input class="form-input" type="text" id="proj-name" name="name" placeholder="VD: Dataset ti\u1EBFng Vi\u1EC7t" autocomplete="off" required>' +
+            '</div>' +
+            '<div class="form-group">' +
+                '<label class="form-label" for="proj-desc">M\xF4 t\u1EA3 (tu\u1EF3 ch\u1ECDn)</label>' +
+                '<textarea class="form-textarea" id="proj-desc" name="description" placeholder="M\xF4 t\u1EA3 ng\u1EAFn v\u1EC1 project..."></textarea>' +
+            '</div>' +
+            '<button type="submit" class="btn btn--primary btn--full" id="create-proj-btn">T\u1EA1o project</button>' +
+        '</form>'
+    );
+
+    const form = overlay.querySelector('#create-project-form');
+    const submitBtn = overlay.querySelector('#create-proj-btn');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const data = getFormData(form);
+        if (!data.name || !data.name.trim()) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = '\u0110ang t\u1EA1o...';
+
+        try {
+            await api.post('/api/projects', {
+                name: data.name.trim(),
+                description: data.description && data.description.trim() ? data.description.trim() : null,
+            });
+            closeBottomSheet(overlay);
+            loadProjects();
+        } catch (err) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'T\u1EA1o project';
+            const errEl = document.createElement('div');
+            errEl.className = 'error-message mt-2';
+            errEl.textContent = err.message;
+            form.appendChild(errEl);
+        }
+    });
+}
+
+// ─── Project Detail ────────────────────────────────────────────────────────────
+
+async function openProject(project) {
+    setDetailView(project);
+    const container = document.getElementById('content');
+    showLoading(container);
+
+    try {
+        const pairs = await api.get('/api/projects/' + project.id + '/pairs');
+        renderProjectDetail(container, project, pairs);
+    } catch (err) {
+        container.innerHTML = '<div class="error-message">' + escapeHtml(err.message) + '</div>';
+    }
+}
+
+function renderProjectDetail(container, project, pairs) {
+    const pairCount = pairs.length;
+    container.innerHTML =
+        '<div class="project-info">' +
+            '<div class="project-info__name">' + escapeHtml(project.name) + '</div>' +
+            (project.description ? '<div class="project-info__desc">' + escapeHtml(project.description) + '</div>' : '') +
+            '<div class="project-info__stats">' +
+                '<div class="project-info__stat">' +
+                    '<div class="project-info__stat-value">' + pairCount + '</div>' +
+                    '<div class="project-info__stat-label">Audio pairs</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+        '<div class="section-header">' +
+            '<div class="section-title">Audio &amp; Text</div>' +
+            '<div class="section-count">' + pairCount + ' m\u1EE5c</div>' +
+        '</div>' +
+        '<div class="pairs-list" id="pairs-list">' +
+            (pairCount === 0 ? renderPairsEmpty() : pairs.map(p => renderPairCard(p)).join('')) +
+        '</div>';
+
+    container.querySelectorAll('.pair-card__delete-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            confirmDeletePair(parseInt(btn.dataset.id), project.id);
+        });
+    });
+}
+
+function renderPairsEmpty() {
+    return '<div class="empty-state">' +
+        '<span class="empty-state__icon">\uD83C\uDFB5</span>' +
+        '<div class="empty-state__title">Ch\u01B0a c\xF3 c\u1EB7p n\xE0o</div>' +
+        '<div class="empty-state__text">Nh\u1EA5n <strong style="color:var(--color-accent)">+</strong> \u0111\u1EC3 upload audio v\xE0 text</div>' +
+    '</div>';
+}
+
+function renderPairCard(pair) {
+    const audioSrc = API_URL + pair.audio_url;
+    return '<div class="pair-card" id="pair-' + pair.id + '">' +
+        '<div class="pair-card__header">' +
+            '<div class="pair-card__name">' + escapeHtml(pair.name) + '</div>' +
+            '<button class="pair-card__delete-btn" data-id="' + pair.id + '" title="X\xF3a">' +
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>' +
+            '</button>' +
+        '</div>' +
+        '<div class="pair-card__audio">' +
+            '<audio controls src="' + escapeHtml(audioSrc) + '" preload="none"></audio>' +
+        '</div>' +
+        '<div class="pair-card__text">' +
+            '<div class="pair-card__text-label">Transcript</div>' +
+            '<div class="pair-card__text-content">' + escapeHtml(pair.text_content) + '</div>' +
+        '</div>' +
+    '</div>';
+}
+
+// ─── Upload Pair ───────────────────────────────────────────────────────────────
+
+function showUploadPairSheet() {
+    if (!currentProject) return;
+
+    const overlay = openBottomSheet(
+        '<div class="bottom-sheet__title">Th\xEAm Audio + Text</div>' +
+        '<form id="upload-pair-form">' +
+            '<div class="form-group">' +
+                '<label class="form-label" for="pair-name">T\xEAn / ID</label>' +
+                '<input class="form-input" type="text" id="pair-name" name="name" placeholder="VD: sample_001" autocomplete="off" required>' +
+            '</div>' +
+            '<div class="form-group">' +
+                '<label class="form-label">File Audio</label>' +
+                '<div class="upload-zone" id="audio-upload-zone">' +
+                    '<input type="file" id="audio-file" name="audio" accept="audio/*" required>' +
+                    '<span class="upload-zone__icon">\uD83C\uDF99</span>' +
+                    '<div class="upload-zone__text"><strong>Ch\u1ECDn file audio</strong><br>MP3, WAV, M4A, OGG...</div>' +
+                    '<div class="upload-zone__preview" id="audio-preview"></div>' +
+                '</div>' +
+                '<div class="upload-progress" id="audio-progress">' +
+                    '<div class="upload-progress__bar"><div class="upload-progress__fill" id="audio-progress-fill"></div></div>' +
+                    '<div class="upload-progress__text" id="audio-progress-text">\u0110ang upload...</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="form-group">' +
+                '<label class="form-label" for="pair-text">Transcript / Text</label>' +
+                '<textarea class="form-textarea" id="pair-text" name="text_content" placeholder="N\u1ED9i dung transcript c\u1EE7a \u0111o\u1EA1n audio..." required></textarea>' +
+            '</div>' +
+            '<button type="submit" class="btn btn--primary btn--full" id="upload-pair-btn">Upload &amp; L\u01B0u</button>' +
+        '</form>'
+    );
+
+    const audioInput = overlay.querySelector('#audio-file');
+    const audioPreview = overlay.querySelector('#audio-preview');
+    audioInput.addEventListener('change', function() {
+        if (audioInput.files[0]) {
+            audioPreview.textContent = audioInput.files[0].name;
+        }
+    });
+
+    const form = overlay.querySelector('#upload-pair-form');
+    const submitBtn = overlay.querySelector('#upload-pair-btn');
+    const progressEl = overlay.querySelector('#audio-progress');
+    const progressFill = overlay.querySelector('#audio-progress-fill');
+    const progressText = overlay.querySelector('#audio-progress-text');
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const name = overlay.querySelector('#pair-name').value.trim();
+        const text = overlay.querySelector('#pair-text').value.trim();
+        const audioFile = audioInput.files[0];
+
+        if (!name || !text || !audioFile) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = '\u0110ang x\u1EED l\xFD...';
+        progressEl.classList.add('visible');
+
+        try {
+            progressFill.style.width = '30%';
+            progressText.textContent = '\u0110ang upload audio...';
+
+            const formData = new FormData();
+            formData.append('file', audioFile);
+            const result = await api.uploadForm('/api/upload', formData);
+
+            progressFill.style.width = '70%';
+            progressText.textContent = '\u0110ang l\u01B0u th\xF4ng tin...';
+
+            await api.post('/api/projects/' + currentProject.id + '/pairs', {
+                name: name,
+                audio_url: result.file_url,
+                text_content: text,
+            });
+
+            progressFill.style.width = '100%';
+            progressText.textContent = 'Ho\xE0n t\u1EA5t!';
+
+            setTimeout(function() {
+                closeBottomSheet(overlay);
+                reloadPairs();
+            }, 400);
+
+        } catch (err) {
+            progressEl.classList.remove('visible');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Upload & L\u01B0u';
+            const errEl = document.createElement('div');
+            errEl.className = 'error-message mt-2';
+            errEl.textContent = err.message;
+            form.appendChild(errEl);
+        }
+    });
+}
+
+async function reloadPairs() {
+    if (!currentProject) return;
+    const container = document.getElementById('content');
+    showLoading(container);
+
+    try {
+        const pairs = await api.get('/api/projects/' + currentProject.id + '/pairs');
+        renderProjectDetail(container, currentProject, pairs);
+    } catch (err) {
+        container.innerHTML = '<div class="error-message">' + escapeHtml(err.message) + '</div>';
+    }
+}
+
+// ─── Delete Pair ───────────────────────────────────────────────────────────────
+
+function confirmDeletePair(pairId, projectId) {
+    const overlay = openBottomSheet(
+        '<div class="bottom-sheet__title">X\xF3a c\u1EB7p n\xE0y?</div>' +
+        '<p style="color:var(--color-text-muted);font-size:14px;margin-bottom:var(--space-xl);">' +
+            'H\xE0nh \u0111\u1ED9ng n\xE0y kh\xF4ng th\u1EC3 ho\xE0n t\xE1c.' +
+        '</p>' +
+        '<div style="display:flex;flex-direction:column;gap:var(--space-sm);">' +
+            '<button class="btn btn--danger btn--full" id="confirm-del">X\xF3a</button>' +
+            '<button class="btn btn--secondary btn--full" id="cancel-del">Hu\u1EF7</button>' +
+        '</div>'
+    );
+
+    overlay.querySelector('#confirm-del').addEventListener('click', async function() {
+        try {
+            await api.delete('/api/projects/' + projectId + '/pairs/' + pairId);
+            closeBottomSheet(overlay);
+            reloadPairs();
+        } catch (err) {
+            const sheet = overlay.querySelector('.bottom-sheet');
+            const errEl = document.createElement('div');
+            errEl.className = 'error-message mt-2';
+            errEl.textContent = err.message;
+            sheet.appendChild(errEl);
+        }
+    });
+
+    overlay.querySelector('#cancel-del').addEventListener('click', function() {
+        closeBottomSheet(overlay);
+    });
+}
+
+// ─── Bottom Sheet ──────────────────────────────────────────────────────────────
+
+function openBottomSheet(content) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = '<div class="bottom-sheet"><div class="bottom-sheet__handle"></div>' + content + '</div>';
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(function() {
+        overlay.classList.add('modal-overlay--active');
+    });
+
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) closeBottomSheet(overlay);
+    });
+
+    return overlay;
+}
+
+function closeBottomSheet(overlay) {
+    overlay.classList.remove('modal-overlay--active');
+    overlay.addEventListener('transitionend', function() { overlay.remove(); }, { once: true });
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+function showLoading(container) {
+    container.innerHTML =
+        '<div class="loading">' +
+            '<div class="spinner"></div>' +
+            '<div class="loading-text">\u0110ang t\u1EA3i...</div>' +
+        '</div>';
+}
+
+function escapeHtml(text) {
+    if (text == null) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    return d.toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function getFormData(form) {
+    const data = {};
+    new FormData(form).forEach(function(v, k) { data[k] = v; });
+    return data;
+}
+
+</script>
+</body>
+</html>

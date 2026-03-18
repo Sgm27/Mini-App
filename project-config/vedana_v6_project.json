@@ -1,0 +1,7 @@
+{
+  "project_name": "vedana_v6",
+  "db_name": "vedana_v6",
+  "mysql_host": "mini-app-db.cx6g0gy84qmq.ap-southeast-1.rds.amazonaws.com",
+  "mysql_port": 3306,
+  "mysql_user": "admin"
+}

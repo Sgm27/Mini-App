@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Ứng dụng báo cáo dọn phòng khách sạn nhanh chóng qua QR">
+    <meta name="theme-color" content="#4A90FF">
+    <title>Báo Cáo Phòng</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+/* ============================================================
+   HOUSEKEEPING QR — Design System
+   Font: Nunito | Primary: #4A90FF | Clean, Elderly-Friendly
+   ============================================================ */
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Variables ─────────────────────────────────────────────── */
+:root {
+    --font:        'Nunito', sans-serif;
+    --blue:        #4A90FF;
+    --blue-dark:   #3578E5;
+    --blue-light:  #E8F4FF;
+    --blue-glow:   rgba(74, 144, 255, 0.18);
+    --bg:          #F8F9FB;
+    --white:       #FFFFFF;
+    --text:        #111111;
+    --text-sub:    #333333;
+    --text-muted:  #6B7280;
+    --border:      #E5EAF2;
+    --green:       #22C55E;
+    --red:         #FF4A4A;
+    --pad:         16px;
+    --gap:         24px;
+    --card-gap:    16px;
+    --r-main:      20px;
+    --r-card:      16px;
+    --r-thumb:     14px;
+    --r-btn:       26px;
+    --r-pill:      999px;
+    --shadow-main: 0 8px 24px rgba(74, 144, 255, 0.15);
+    --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.06);
+    --shadow-btn:  0 4px 16px rgba(74, 144, 255, 0.35);
+    --shadow-icon: 0 2px 8px rgba(0, 0, 0, 0.12);
+    --ease:        cubic-bezier(0.4, 0, 0.2, 1);
+    --t-fast:      150ms;
+    --t-med:       250ms;
+    --t-screen:    320ms;
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    font-family: var(--font);
+    font-size: 15px;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+}
+
+.hidden { display: none !important; }
+
+/* ── App Shell ─────────────────────────────────────────────── */
+#app {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+}
+
+.screen {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, var(--bg) 0%, var(--white) 60%);
+    transform: translateX(100%);
+    transition: transform var(--t-screen) var(--ease);
+    will-change: transform;
+    z-index: 1;
+}
+
+.screen.active {
+    transform: translateX(0);
+    z-index: 2;
+}
+
+.screen.slide-out {
+    transform: translateX(-28%);
+    z-index: 1;
+}
+
+.screen__scroll {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+.screen__pad {
+    padding: var(--pad);
+    padding-top: calc(var(--pad) + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(var(--pad) + env(safe-area-inset-bottom, 0px));
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--card-gap);
+}
+
+.screen__pad--report {
+    padding-top: calc(60px + var(--pad));
+    padding-bottom: 96px;
+}
+
+.screen__pad--center {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+    padding-top: 48px;
+    padding-bottom: 48px;
+}
+
+/* ── Screen 1: QR Scan ─────────────────────────────────────── */
+.screen__top {
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+.app-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 6px 14px;
+    border-radius: var(--r-pill);
+    background: var(--blue-light);
+}
+
+.app-logo__text {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--blue);
+    letter-spacing: 0.3px;
+}
+
+.page-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.3;
+    margin-bottom: 6px;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.scanner-wrap { margin: 4px 0; }
+
+.scanner-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: var(--r-main);
+    overflow: hidden;
+    background: #1a1a2e;
+    box-shadow: var(--shadow-main);
+}
+
+.scanner-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.scanner-idle {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: rgba(255,255,255,0.5);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.scanner-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+}
+
+.scanner-dim {
+    background: rgba(0,0,0,0.42);
+    flex: 1;
+}
+
+.scanner-row {
+    display: flex;
+    align-items: stretch;
+    flex: 2.5;
+}
+
+.scanner-box {
+    flex: 3;
+    position: relative;
+}
+
+.corner {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-color: white;
+    border-style: solid;
+}
+.corner--tl { top:0;    left:0;  border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+.corner--tr { top:0;    right:0; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+.corner--bl { bottom:0; left:0;  border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+.corner--br { bottom:0; right:0; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+
+.scan-line {
+    position: absolute;
+    left: 4px; right: 4px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--blue), white, var(--blue), transparent);
+    border-radius: 2px;
+    animation: scanDown 2.2s ease-in-out infinite;
+    box-shadow: 0 0 8px var(--blue);
+}
+
+@keyframes scanDown {
+    0%   { top:4px;  opacity:0; }
+    8%   { opacity:1; }
+    92%  { opacity:1; }
+    100% { top:calc(100% - 6px); opacity:0; }
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    height: 52px;
+    border-radius: var(--r-btn);
+    border: none;
+    font-family: var(--font);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform var(--t-fast) var(--ease), background var(--t-fast), box-shadow var(--t-fast);
+    user-select: none;
+}
+
+.btn--primary {
+    background: var(--blue);
+    color: white;
+    box-shadow: var(--shadow-btn);
+}
+
+.btn--primary:active {
+    transform: scale(0.97);
+    background: var(--blue-dark);
+    box-shadow: 0 2px 8px rgba(74,144,255,0.25);
+}
+
+.btn--secondary {
+    background: var(--blue-light);
+    color: var(--blue);
+}
+
+.btn--secondary:active { transform: scale(0.97); background: #d4e9ff; }
+
+.btn--sm {
+    width: auto;
+    height: 44px;
+    padding: 0 20px;
+    font-size: 14px;
+}
+
+.btn--cta { font-size: 17px; letter-spacing: 0.5px; }
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    margin: 4px 0;
+}
+.divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.manual-entry { display: flex; flex-direction: column; gap: 12px; }
+.manual-entry__row { display: flex; gap: 10px; }
+
+.manual-input {
+    flex: 1;
+    height: 44px;
+    padding: 0 16px;
+    border-radius: var(--r-card);
+    border: 1.5px solid var(--border);
+    font-family: var(--font);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--white);
+    outline: none;
+    transition: border-color var(--t-fast);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.manual-input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px var(--blue-glow);
+}
+
+/* ── Screen 2: Camera ──────────────────────────────────────── */
+#screen-camera { background: #0a0a12; }
+
+.camera-fullscreen {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+}
+
+.camera-header {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: calc(env(safe-area-inset-top,0px) + 12px) var(--pad) 20px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, transparent 100%);
+}
+
+.camera-header__info { flex: 1; }
+
+.camera-room-label {
+    font-size: 18px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: 1px;
+}
+
+.camera-subtitle {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.photo-counter-badge {
+    background: rgba(255,255,255,0.2);
+    border-radius: var(--r-pill);
+    padding: 4px 14px;
+    font-size: 15px;
+    font-weight: 800;
+    color: white;
+    backdrop-filter: blur(8px);
+}
+
+.counter-sep { color: rgba(255,255,255,0.5); }
+
+.btn-icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--white);
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-icon);
+    flex-shrink: 0;
+    transition: transform var(--t-fast);
+}
+.btn-icon:active { transform: scale(0.92); }
+
+.btn-icon--ghost {
+    background: rgba(255,255,255,0.2);
+    box-shadow: none;
+    backdrop-filter: blur(8px);
+}
+
+.camera-bottom {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 10;
+    background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+    padding-bottom: calc(env(safe-area-inset-bottom,0px) + 14px);
+}
+
+.thumbnails-strip { padding: 10px var(--pad) 12px; }
+
+.thumbnails-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+.thumbnails-scroll::-webkit-scrollbar { display: none; }
+
+.thumb {
+    position: relative;
+    width: 60px; height: 60px;
+    border-radius: var(--r-thumb);
+    overflow: visible;
+    flex-shrink: 0;
+}
+
+.thumb img {
+    width: 60px; height: 60px;
+    border-radius: var(--r-thumb);
+    object-fit: cover;
+    border: 2.5px solid white;
+    display: block;
+}
+
+.thumb__delete {
+    position: absolute;
+    top: -6px; right: -6px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--red);
+    border: none;
+    color: white;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: transform var(--t-fast);
+    z-index: 1;
+}
+.thumb__delete:active { transform: scale(0.88); }
+
+.camera-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+}
+
+.camera-controls__filler { width: 72px; }
+
+.btn-continue {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-radius: var(--r-pill);
+    background: rgba(255,255,255,0.2);
+    border: 1.5px solid rgba(255,255,255,0.4);
+    color: white;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: transform var(--t-fast), background var(--t-fast);
+}
+.btn-continue:active { transform: scale(0.95); background: rgba(255,255,255,0.3); }
+
+.btn-shutter {
+    position: relative;
+    width: 76px; height: 76px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+
+.shutter-outer {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3.5px solid white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+.shutter-inner {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: white;
+    transition: transform var(--t-fast) var(--ease), background var(--t-fast);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+.btn-shutter:active .shutter-inner {
+    transform: scale(0.86);
+    background: #e0e0e0;
+}
+
+/* ── Screen 3: Report ──────────────────────────────────────── */
+.report-sticky-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: calc(env(safe-area-inset-top,0px) + 10px) var(--pad) 10px;
+    background: rgba(248,249,251,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    min-height: 56px;
+}
+
+.report-header-room {
+    flex: 1;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: 0.5px;
+}
+
+.report-status-dot {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; color: var(--text-muted);
+}
+
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot--green { background: var(--green); }
+
+.card {
+    border-radius: var(--r-main);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.card--main { background: var(--blue-light); box-shadow: var(--shadow-main); }
+.card--white { background: var(--white); box-shadow: var(--shadow-card); }
+
+.card-label-row { display: flex; align-items: center; gap: 8px; }
+.card-title { font-size: 15px; font-weight: 700; color: var(--text); flex: 1; }
+
+.photo-count-label {
+    font-size: 12px; font-weight: 700; color: var(--blue);
+    background: var(--blue-light);
+    padding: 3px 10px; border-radius: var(--r-pill);
+}
+
+.report-photos-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    min-height: 76px;
+    align-items: center;
+}
+.report-photos-scroll::-webkit-scrollbar { display: none; }
+
+.report-thumb {
+    width: 72px; height: 72px;
+    border-radius: var(--r-thumb);
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid var(--border);
+}
+
+.empty-hint { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+
+.voice-card { background: var(--blue-light); }
+
+.voice-record-center {
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    padding: 8px 0;
+}
+
+.btn-mic {
+    position: relative;
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: var(--blue);
+    border: none; color: white; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 28px rgba(74,144,255,0.45);
+    transition: transform var(--t-fast), background var(--t-fast), box-shadow var(--t-fast);
+}
+.btn-mic:active { transform: scale(0.94); }
+
+.btn-mic.recording {
+    background: var(--red);
+    box-shadow: 0 8px 28px rgba(255,74,74,0.45);
+    animation: micBeat 1.4s ease-in-out infinite;
+}
+
+@keyframes micBeat {
+    0%,100% { box-shadow: 0 8px 28px rgba(255,74,74,0.4); }
+    50%     { box-shadow: 0 12px 40px rgba(255,74,74,0.65); }
+}
+
+.mic-ripple {
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+    border: 2px solid rgba(74,144,255,0.35);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.mic-ripple--2 { inset: -28px; border-color: rgba(74,144,255,0.2); }
+
+.btn-mic.recording .mic-ripple {
+    border-color: rgba(255,74,74,0.4);
+    animation: rippleOut 1.5s ease-out infinite;
+}
+.btn-mic.recording .mic-ripple--2 {
+    border-color: rgba(255,74,74,0.2);
+    animation: rippleOut 1.5s ease-out 0.45s infinite;
+}
+
+@keyframes rippleOut {
+    0%   { transform: scale(0.85); opacity: 0.8; }
+    100% { transform: scale(1.2);  opacity: 0;   }
+}
+
+.voice-status {
+    font-size: 14px; font-weight: 700; color: var(--text-sub); text-align: center;
+}
+
+.voice-textarea {
+    width: 100%;
+    min-height: 88px;
+    padding: 12px 14px;
+    border-radius: var(--r-card);
+    border: 1.5px solid var(--border);
+    font-family: var(--font);
+    font-size: 14px; font-weight: 600;
+    color: var(--text);
+    background: var(--white);
+    resize: vertical; outline: none;
+    transition: border-color var(--t-fast);
+    line-height: 1.6;
+}
+.voice-textarea:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px var(--blue-glow);
+}
+
+.voice-hint {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; color: var(--text-muted); font-weight: 600;
+}
+
+.sticky-cta {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 20;
+    padding: 12px var(--pad) calc(12px + env(safe-area-inset-bottom,0px));
+    background: linear-gradient(to top, rgba(255,255,255,0.98) 60%, transparent);
+}
+
+.cta-spacer { height: 80px; }
+
+/* ── Screen 4: Success ─────────────────────────────────────── */
+.success-anim-wrap {
+    position: relative;
+    width: 160px; height: 160px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 8px;
+}
+
+.success-circle {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: var(--blue);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 12px 36px rgba(74,144,255,0.45);
+    animation: popIn 0.55s cubic-bezier(0.34,1.56,0.64,1) both;
+    z-index: 2; position: relative;
+}
+
+@keyframes popIn {
+    0%   { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.success-rings-wrap {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.success-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(74,144,255,0.3);
+    animation: expandRing 2s ease-out infinite;
+}
+.success-ring--1 { width:130px; height:130px; animation-delay:0.1s; }
+.success-ring--2 { width:160px; height:160px; animation-delay:0.5s; }
+
+@keyframes expandRing {
+    0%   { opacity:0.6; transform:scale(0.85); }
+    100% { opacity:0;   transform:scale(1.15); }
+}
+
+.success-title {
+    font-size: 26px; font-weight: 900; color: var(--text); line-height: 1.2;
+}
+
+.success-subtitle {
+    font-size: 15px; color: var(--text-muted); font-weight: 600; margin-top: -8px;
+}
+
+.success-room-badge {
+    display: inline-flex; align-items: center;
+    padding: 8px 24px;
+    border-radius: var(--r-pill);
+    background: var(--blue-light);
+    color: var(--blue);
+    font-size: 16px; font-weight: 800; letter-spacing: 1px;
+    box-shadow: var(--shadow-main);
+}
+
+.success-countdown { margin: -8px 0; }
+
+.caption { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+
+/* ── Toast ─────────────────────────────────────────────────── */
+.toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    z-index: 999;
+    background: rgba(17,17,17,0.9);
+    color: white;
+    font-family: var(--font);
+    font-size: 14px; font-weight: 700;
+    padding: 12px 24px;
+    border-radius: var(--r-pill);
+    opacity: 0;
+    transition: opacity var(--t-med) var(--ease), transform var(--t-med) var(--ease);
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 85vw;
+    text-align: center;
+    backdrop-filter: blur(8px);
+}
+
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.toast--success { background: rgba(34,197,94,0.95); }
+.toast.toast--error   { background: rgba(255,74,74,0.95); }
+
+/* ── Loading Overlay ───────────────────────────────────────── */
+.loading-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(6px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px;
+}
+
+.loading-spinner {
+    width: 52px; height: 52px;
+    border: 4px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.loading-label { font-size:15px; font-weight:700; color:var(--text-muted); }
+
+/* ── Responsive max-width ──────────────────────────────────── */
+@media (min-width: 480px) {
+    #app {
+        max-width: 480px;
+        left: 50%;
+        transform: translateX(-50%);
+        box-shadow: 0 0 60px rgba(0,0,0,0.12);
+    }
+    .toast          { bottom:100px; }
+    .report-sticky-header { max-width:480px; left:50%; transform:translateX(-50%); }
+    .sticky-cta     { max-width:480px; left:50%; transform:translateX(-50%); }
+}
+
+</style>
+</head>
+<body>
+
+<!-- Toast notification -->
+<div id="toast" class="toast" aria-live="polite"></div>
+
+<!-- Loading overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner"></div>
+    <p class="loading-label" id="loading-label">Đang gửi...</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- APP                                                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="app">
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <!-- SCREEN 1: QR SCAN                                   -->
+    <!-- ─────────────────────────────────────────────────── -->
+    <div class="screen active" id="screen-qr">
+        <div class="screen__scroll">
+            <div class="screen__pad">
+
+                <div class="screen__top">
+                    <div class="app-logo">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#4A90FF" stroke-width="2"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="#4A90FF" stroke-width="2"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="#4A90FF" stroke-width="2"/>
+                            <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#4A90FF"/>
+                        </svg>
+                        <span class="app-logo__text">HouseKeeping</span>
+                    </div>
+                    <h1 class="page-title">Quét mã phòng</h1>
+                    <p class="page-subtitle">Hướng camera vào mã QR trên cửa phòng</p>
+                </div>
+
+                <!-- QR Scanner Frame -->
+                <div class="scanner-wrap">
+                    <div class="scanner-frame" id="scanner-frame">
+                        <video id="qr-video" class="scanner-video" playsinline autoplay muted></video>
+                        <canvas id="qr-canvas" class="hidden"></canvas>
+
+                        <!-- Overlay with corner brackets -->
+                        <div class="scanner-overlay">
+                            <div class="scanner-dim scanner-dim--top"></div>
+                            <div class="scanner-row">
+                                <div class="scanner-dim"></div>
+                                <div class="scanner-box">
+                                    <span class="corner corner--tl"></span>
+                                    <span class="corner corner--tr"></span>
+                                    <span class="corner corner--bl"></span>
+                                    <span class="corner corner--br"></span>
+                                    <div class="scan-line"></div>
+                                </div>
+                                <div class="scanner-dim"></div>
+                            </div>
+                            <div class="scanner-dim scanner-dim--bot"></div>
+                        </div>
+
+                        <!-- Idle placeholder when camera off -->
+                        <div class="scanner-idle" id="scanner-idle">
+                            <svg width="56" height="56" viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="3" width="7" height="7" rx="1" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+                                <rect x="14" y="3" width="7" height="7" rx="1" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+                                <rect x="3" y="14" width="7" height="7" rx="1" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+                                <path d="M14 14h2v2h-2zM18 14h3M14 18h2M18 18h3v3M14 20v3" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <p>Nhấn nút để bắt đầu quét</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Start Scan Button -->
+                <button class="btn btn--primary" id="btn-start-scan">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Bắt đầu quét
+                </button>
+
+                <!-- Manual entry fallback -->
+                <div class="manual-entry">
+                    <div class="divider">
+                        <span>hoặc nhập số phòng</span>
+                    </div>
+                    <div class="manual-entry__row">
+                        <input
+                            type="text"
+                            id="manual-room"
+                            class="manual-input"
+                            placeholder="VD: 401"
+                            maxlength="10"
+                            inputmode="text"
+                        >
+                        <button class="btn btn--secondary btn--sm" id="btn-manual-enter">Vào</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <!-- SCREEN 2: CAMERA CAPTURE                            -->
+    <!-- ─────────────────────────────────────────────────── -->
+    <div class="screen" id="screen-camera">
+
+        <!-- Camera live view fills screen -->
+        <video id="camera-video" class="camera-fullscreen" playsinline autoplay muted></video>
+        <canvas id="capture-canvas" class="hidden"></canvas>
+
+        <!-- Top overlay: header -->
+        <div class="camera-header">
+            <button class="btn-icon btn-icon--ghost" id="btn-camera-back" aria-label="Quay lại">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <path d="M15 18l-6-6 6-6" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <div class="camera-header__info">
+                <p class="camera-room-label" id="camera-room-label">PHÒNG 401</p>
+                <p class="camera-subtitle">Chụp ảnh sau khi dọn</p>
+            </div>
+            <div class="photo-counter-badge">
+                <span id="photo-count">0</span><span class="counter-sep">/3</span>
+            </div>
+        </div>
+
+        <!-- Bottom: thumbnails + controls -->
+        <div class="camera-bottom">
+            <!-- Thumbnails -->
+            <div class="thumbnails-strip" id="thumbnails-strip">
+                <div class="thumbnails-scroll" id="thumbnails-container">
+                    <!-- thumbnail items injected here -->
+                </div>
+            </div>
+
+            <!-- Controls row -->
+            <div class="camera-controls">
+                <button class="btn-continue" id="btn-camera-continue">
+                    <span>Tiếp tục</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <button class="btn-shutter" id="btn-shutter" aria-label="Chụp ảnh">
+                    <div class="shutter-outer"></div>
+                    <div class="shutter-inner"></div>
+                </button>
+                <div class="camera-controls__filler"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <!-- SCREEN 3: ROOM REPORT                               -->
+    <!-- ─────────────────────────────────────────────────── -->
+    <div class="screen" id="screen-report">
+        <div class="screen__scroll">
+
+            <!-- Sticky header -->
+            <div class="report-sticky-header">
+                <button class="btn-icon" id="btn-report-back" aria-label="Quay lại">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M15 18l-6-6 6-6" stroke="#4A90FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <span class="report-header-room" id="report-room-label">PHÒNG 401</span>
+                <div class="report-status-dot">
+                    <span class="dot dot--green"></span>
+                    <span>Sẵn sàng</span>
+                </div>
+            </div>
+
+            <div class="screen__pad screen__pad--report">
+
+                <!-- Photos card -->
+                <div class="card card--white" id="photos-card">
+                    <div class="card-label-row">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="3" width="18" height="18" rx="3" stroke="#4A90FF" stroke-width="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5" fill="#4A90FF"/>
+                            <path d="M21 15l-5-5L5 21" stroke="#4A90FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h2 class="card-title">Ảnh đã chụp</h2>
+                        <span class="photo-count-label" id="photo-count-label">0 ảnh</span>
+                    </div>
+                    <div class="report-photos-scroll" id="report-photos-container">
+                        <p class="empty-hint">Chưa có ảnh nào</p>
+                    </div>
+                </div>
+
+                <!-- Voice recording card -->
+                <div class="card card--main voice-card">
+                    <div class="card-label-row">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <rect x="9" y="2" width="6" height="13" rx="3" fill="#4A90FF"/>
+                            <path d="M5 11a7 7 0 0014 0M12 21v-3M9 21h6" stroke="#4A90FF" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <h2 class="card-title">Ghi âm báo cáo</h2>
+                    </div>
+
+                    <div class="voice-record-center">
+                        <button class="btn-mic" id="btn-mic" aria-label="Ghi âm">
+                            <svg class="mic-icon" width="36" height="36" viewBox="0 0 24 24" fill="none">
+                                <rect x="9" y="2" width="6" height="13" rx="3" fill="white"/>
+                                <path d="M5 11a7 7 0 0014 0M12 21v-3M9 21h6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <div class="mic-ripple"></div>
+                            <div class="mic-ripple mic-ripple--2"></div>
+                        </button>
+                        <p class="voice-status" id="voice-status">Nhấn để ghi âm</p>
+                    </div>
+
+                    <textarea
+                        id="voice-text"
+                        class="voice-textarea"
+                        placeholder="Nội dung báo cáo sẽ hiện ở đây sau khi ghi âm..."
+                        rows="4"
+                    ></textarea>
+
+                    <p class="voice-hint">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="#6B7280" stroke-width="2"/>
+                            <path d="M12 8v4M12 16h.01" stroke="#6B7280" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Bạn có thể chỉnh sửa nội dung sau khi ghi âm
+                    </p>
+                </div>
+
+                <!-- Bottom spacer for sticky CTA -->
+                <div class="cta-spacer"></div>
+            </div>
+        </div>
+
+        <!-- Sticky CTA -->
+        <div class="sticky-cta">
+            <button class="btn btn--primary btn--cta" id="btn-submit">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                GỬI BÁO CÁO
+            </button>
+        </div>
+    </div>
+
+    <!-- ─────────────────────────────────────────────────── -->
+    <!-- SCREEN 4: SUCCESS                                   -->
+    <!-- ─────────────────────────────────────────────────── -->
+    <div class="screen" id="screen-success">
+        <div class="screen__scroll">
+            <div class="screen__pad screen__pad--center">
+
+                <div class="success-anim-wrap">
+                    <div class="success-rings-wrap">
+                        <div class="success-ring success-ring--1"></div>
+                        <div class="success-ring success-ring--2"></div>
+                    </div>
+                    <div class="success-circle">
+                        <svg width="56" height="56" viewBox="0 0 24 24" fill="none">
+                            <path d="M20 6L9 17l-5-5" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <h1 class="success-title">Gửi thành công!</h1>
+                <p class="success-subtitle">Báo cáo phòng đã được ghi nhận</p>
+
+                <div class="success-room-badge" id="success-room-label">PHÒNG 401</div>
+
+                <div class="success-countdown">
+                    <p class="caption">Tự động chuyển sau <strong id="countdown">3</strong>s</p>
+                </div>
+
+                <button class="btn btn--primary" id="btn-new-room">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 21V7l9-4 9 4v14M9 21v-6h6v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Bắt đầu phòng mới
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div><!-- #app -->
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+/**
+ * API Helper Module
+ * Handles all communication with the backend
+ *
+ * Usage in app.js:
+ *   api.get('/api/health')
+ *   api.post('/api/items', { name: 'Item 1' })
+ *   api.put('/api/items/1', { name: 'Updated' })
+ *   api.delete('/api/items/1')
+ *   api.uploadForm('/api/upload', formData)
+ *
+ * Upload file:
+ *   const formData = new FormData();
+ *   formData.append('file', fileInput.files[0]);
+ *   const { file_url } = await api.uploadForm('/api/upload', formData);
+ */
+
+const API_URL = 'https://ktuywpmo3wp3e77nhft3zaq7zu0btyzq.lambda-url.ap-southeast-1.on.aws';
+
+/**
+ * Process response: check status and parse JSON
+ */
+async function processResponse(response) {
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.detail || data?.error || `HTTP ${response.status}`
+    );
+  }
+
+  if (data && data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
+}
+
+const api = {
+  /**
+   * Make a GET request
+   * @param {string} path - API path (e.g., '/api/health')
+   * @param {object} params - Query parameters
+   * @returns {Promise<any>} Response data
+   */
+  async get(path, params = {}) {
+    const url = new URL(`${API_URL}${path}`);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        url.searchParams.append(key, value);
+      }
+    });
+
+    const response = await fetch(url.toString());
+    return processResponse(response);
+  },
+
+  /**
+   * Make a POST request
+   * @param {string} path - API path (e.g., '/api/items')
+   * @param {object} body - Request body
+   * @returns {Promise<any>} Response data
+   */
+  async post(path, body = {}) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return processResponse(response);
+  },
+
+  /**
+   * Make a PUT request
+   * @param {string} path - API path (e.g., '/api/items/1')
+   * @param {object} body - Request body
+   * @returns {Promise<any>} Response data
+   */
+  async put(path, body = {}) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return processResponse(response);
+  },
+
+  /**
+   * Make a DELETE request
+   * @param {string} path - API path (e.g., '/api/items/1')
+   * @param {object} body - Optional request body
+   * @returns {Promise<any>} Response data
+   */
+  async delete(path, body = null) {
+    const options = { method: 'DELETE' };
+    if (body) {
+      options.headers = { 'Content-Type': 'application/json' };
+      options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(`${API_URL}${path}`, options);
+    return processResponse(response);
+  },
+
+  /**
+   * Upload files with FormData
+   * @param {string} path - API path (e.g., '/api/upload')
+   * @param {FormData} formData - FormData object with files and fields
+   * @returns {Promise<any>} Response data
+   */
+  async uploadForm(path, formData) {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      body: formData,
+    });
+    return processResponse(response);
+  },
+};
+
+// Export for use in other modules
+window.api = api;
+
+</script>
+<script>
+/**
+ * Housekeeping QR Report – App Logic
+ * 4 screens: QR Scan → Camera Capture → Room Report → Success
+ */
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════ */
+const state = {
+    roomId: null,
+    photos: [],          // [{ dataUrl: string, fileUrl: string }]
+    voiceText: '',
+    cameraStream: null,
+    qrStream: null,
+    qrRaf: null,
+    isScanning: false,
+    recognition: null,
+    isRecording: false,
+    countdownTimer: null,
+    submitting: false,
+};
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN NAVIGATION
+   ═══════════════════════════════════════════════════════════ */
+function navigateTo(toId) {
+    const current = document.querySelector('.screen.active');
+    const next = document.getElementById(`screen-${toId}`);
+    if (!next || next === current) return;
+
+    if (current) {
+        current.classList.add('slide-out');
+        current.classList.remove('active');
+        setTimeout(() => current.classList.remove('slide-out'), 380);
+    }
+    next.classList.add('active');
+}
+
+function navigateBack(toId) {
+    const current = document.querySelector('.screen.active');
+    const prev = document.getElementById(`screen-${toId}`);
+    if (!prev) return;
+
+    if (current) {
+        // slide current out to the right
+        current.style.transition = `transform 300ms cubic-bezier(0.4,0,0.2,1)`;
+        current.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            current.classList.remove('active');
+            current.style.transform = '';
+            current.style.transition = '';
+        }, 310);
+    }
+
+    // bring prev back from left
+    prev.style.transition = 'none';
+    prev.style.transform = 'translateX(-28%)';
+    prev.classList.add('active');
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            prev.style.transition = `transform 300ms cubic-bezier(0.4,0,0.2,1)`;
+            prev.style.transform = 'translateX(0)';
+            setTimeout(() => {
+                prev.style.transform = '';
+                prev.style.transition = '';
+            }, 320);
+        });
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════════════════════ */
+let toastTimer = null;
+function showToast(msg, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast ${type ? `toast--${type}` : ''}`;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOADING OVERLAY
+   ═══════════════════════════════════════════════════════════ */
+function showLoading(label = 'Đang xử lý...') {
+    document.getElementById('loading-label').textContent = label;
+    document.getElementById('loading-overlay').classList.remove('hidden');
+}
+
+function hideLoading() {
+    document.getElementById('loading-overlay').classList.add('hidden');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN 1 – QR SCAN
+   ═══════════════════════════════════════════════════════════ */
+function initQRScreen() {
+    document.getElementById('btn-start-scan').addEventListener('click', startQRScan);
+
+    document.getElementById('btn-manual-enter').addEventListener('click', () => {
+        const val = document.getElementById('manual-room').value.trim();
+        if (!val) { showToast('Vui lòng nhập số phòng', 'error'); return; }
+        onRoomIdentified(val.toUpperCase());
+    });
+
+    document.getElementById('manual-room').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('btn-manual-enter').click();
+    });
+}
+
+// Use native BarcodeDetector when available (Safari 16.4+, Chrome 83+)
+// Falls back to jsQR (pure JS) otherwise
+const nativeBarcodeDetector = ('BarcodeDetector' in window)
+    ? new BarcodeDetector({ formats: ['qr_code'] })
+    : null;
+
+async function startQRScan() {
+    if (state.isScanning) return;
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 960 } }
+        });
+        state.qrStream = stream;
+        state.isScanning = true;
+
+        const video = document.getElementById('qr-video');
+        video.srcObject = stream;
+        await video.play();
+
+        document.getElementById('scanner-idle').classList.add('hidden');
+        document.getElementById('btn-start-scan').textContent = '⏹ Dừng quét';
+        document.getElementById('btn-start-scan').onclick = stopQRScan;
+
+        scanQRLoop();
+    } catch (err) {
+        showToast('Không thể truy cập camera', 'error');
+        console.error('Camera error:', err);
+    }
+}
+
+function stopQRScan() {
+    state.isScanning = false;
+    clearTimeout(state.qrRaf);
+    state.qrRaf = null;
+    if (state.qrStream) {
+        state.qrStream.getTracks().forEach(t => t.stop());
+        state.qrStream = null;
+    }
+    const video = document.getElementById('qr-video');
+    video.srcObject = null;
+    document.getElementById('scanner-idle').classList.remove('hidden');
+    document.getElementById('btn-start-scan').textContent = '📷 Bắt đầu quét';
+    document.getElementById('btn-start-scan').onclick = startQRScan;
+}
+
+async function scanQRLoop() {
+    if (!state.isScanning) return;
+
+    const video = document.getElementById('qr-video');
+
+    if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+        let qrData = null;
+
+        if (nativeBarcodeDetector) {
+            // Native API: fast, hardware-accelerated, reads directly from video
+            try {
+                const results = await nativeBarcodeDetector.detect(video);
+                if (results.length > 0) qrData = results[0].rawValue;
+            } catch (e) { /* detect can fail on some frames, ignore */ }
+        } else if (typeof jsQR === 'function') {
+            // Fallback: downscale to 480px wide for faster processing
+            const canvas = document.getElementById('qr-canvas');
+            const scale = Math.min(1, 480 / video.videoWidth);
+            canvas.width = Math.round(video.videoWidth * scale);
+            canvas.height = Math.round(video.videoHeight * scale);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: 'dontInvert',
+            });
+            if (code && code.data) qrData = code.data;
+        }
+
+        if (qrData) {
+            stopQRScan();
+            onRoomIdentified(qrData.trim().toUpperCase());
+            return;
+        }
+    }
+
+    // Throttle: scan every 200ms instead of every frame (~5fps vs 60fps)
+    state.qrRaf = setTimeout(scanQRLoop, 200);
+}
+
+function onRoomIdentified(roomId) {
+    state.roomId = roomId;
+    state.photos = [];
+    state.voiceText = '';
+    showToast(`Phòng ${roomId} – Bắt đầu chụp ảnh`, 'success');
+    setTimeout(() => {
+        startCameraScreen();
+    }, 400);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN 2 – CAMERA CAPTURE
+   ═══════════════════════════════════════════════════════════ */
+function startCameraScreen() {
+    navigateTo('camera');
+    document.getElementById('camera-room-label').textContent = `PHÒNG ${state.roomId}`;
+    updatePhotoCounter();
+    renderCameraThumbnails();
+    startCameraStream();
+}
+
+async function startCameraStream() {
+    stopCameraStream();
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+        });
+        state.cameraStream = stream;
+        const video = document.getElementById('camera-video');
+        video.srcObject = stream;
+        await video.play();
+    } catch (err) {
+        showToast('Không thể truy cập camera', 'error');
+        console.error('Camera error:', err);
+    }
+}
+
+function stopCameraStream() {
+    if (state.cameraStream) {
+        state.cameraStream.getTracks().forEach(t => t.stop());
+        state.cameraStream = null;
+    }
+}
+
+function updatePhotoCounter() {
+    const count = state.photos.length;
+    document.getElementById('photo-count').textContent = count;
+    // Auto navigate at 3 photos
+    if (count >= 3) {
+        showToast('Đủ 3 ảnh!', 'success');
+        setTimeout(goToReportScreen, 600);
+    }
+}
+
+function renderCameraThumbnails() {
+    const container = document.getElementById('thumbnails-container');
+    container.innerHTML = state.photos.map((p, i) => `
+        <div class="thumb" id="thumb-${i}">
+            <img src="${p.dataUrl}" alt="Ảnh ${i + 1}">
+            <button class="thumb__delete" onclick="deletePhoto(${i})" aria-label="Xóa ảnh">✕</button>
+        </div>
+    `).join('');
+}
+
+async function capturePhoto() {
+    const video = document.getElementById('camera-video');
+    const canvas = document.getElementById('capture-canvas');
+
+    if (!video.srcObject) { showToast('Camera chưa sẵn sàng', 'error'); return; }
+    if (state.photos.length >= 3) { showToast('Tối đa 3 ảnh', 'error'); return; }
+
+    // Flash feedback
+    const flashEl = document.createElement('div');
+    flashEl.style.cssText = 'position:absolute;inset:0;background:white;z-index:50;opacity:0.85;pointer-events:none;';
+    document.getElementById('screen-camera').appendChild(flashEl);
+    setTimeout(() => flashEl.remove(), 200);
+
+    // Capture frame
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+    // Upload in background – convert dataUrl to Blob
+    canvas.toBlob(async (blob) => {
+        const fd = new FormData();
+        fd.append('file', blob, `photo_${Date.now()}.jpg`);
+        try {
+            const res = await api.uploadForm('/api/upload', fd);
+            // Update fileUrl once upload completes
+            const idx = state.photos.findIndex(p => p.dataUrl === dataUrl);
+            if (idx !== -1) state.photos[idx].fileUrl = res.file_url;
+        } catch (err) {
+            console.warn('Upload failed, will retry on submit:', err.message);
+        }
+    }, 'image/jpeg', 0.82);
+
+    state.photos.push({ dataUrl, fileUrl: null });
+    renderCameraThumbnails();
+    updatePhotoCounter();
+}
+
+function deletePhoto(index) {
+    state.photos.splice(index, 1);
+    renderCameraThumbnails();
+    updatePhotoCounter();
+}
+
+function goToReportScreen() {
+    stopCameraStream();
+    navigateTo('report');
+    initReportScreen();
+}
+
+function initCameraScreen() {
+    document.getElementById('btn-shutter').addEventListener('click', capturePhoto);
+    document.getElementById('btn-camera-continue').addEventListener('click', () => {
+        if (state.photos.length === 0) { showToast('Hãy chụp ít nhất 1 ảnh', 'error'); return; }
+        goToReportScreen();
+    });
+    document.getElementById('btn-camera-back').addEventListener('click', () => {
+        stopCameraStream();
+        navigateBack('qr');
+        document.getElementById('manual-room').value = '';
+        state.roomId = null;
+        state.photos = [];
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN 3 – ROOM REPORT
+   ═══════════════════════════════════════════════════════════ */
+function initReportScreen() {
+    // Update labels
+    document.getElementById('report-room-label').textContent = `PHÒNG ${state.roomId}`;
+
+    // Render photos
+    const container = document.getElementById('report-photos-container');
+    if (state.photos.length === 0) {
+        container.innerHTML = '<p class="empty-hint">Chưa có ảnh nào</p>';
+    } else {
+        container.innerHTML = state.photos.map((p, i) =>
+            `<img class="report-thumb" src="${p.dataUrl}" alt="Ảnh ${i + 1}">`
+        ).join('');
+    }
+
+    // Photo count label
+    const countLabel = document.getElementById('photo-count-label');
+    if (countLabel) countLabel.textContent = `${state.photos.length} ảnh`;
+
+    // Restore voice text
+    document.getElementById('voice-text').value = state.voiceText;
+}
+
+function initReportButtons() {
+    document.getElementById('btn-report-back').addEventListener('click', () => {
+        stopRecording();
+        navigateBack('camera');
+        startCameraStream();
+    });
+
+    document.getElementById('btn-mic').addEventListener('click', toggleRecording);
+
+    document.getElementById('btn-submit').addEventListener('click', submitReport);
+}
+
+/* ── Voice Recording ──────────────────────────────────────── */
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function toggleRecording() {
+    if (state.isRecording) {
+        stopRecording();
+    } else {
+        startRecording();
+    }
+}
+
+function startRecording() {
+    if (!SpeechRecognition) {
+        showToast('Trình duyệt không hỗ trợ ghi âm', 'error');
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'vi-VN';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    const textarea = document.getElementById('voice-text');
+    let finalText = textarea.value || '';
+
+    recognition.onstart = () => {
+        state.isRecording = true;
+        document.getElementById('btn-mic').classList.add('recording');
+        document.getElementById('voice-status').textContent = '🔴 Đang ghi âm...';
+    };
+
+    recognition.onresult = (e) => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+            const result = e.results[i];
+            if (result.isFinal) {
+                finalText += result[0].transcript + ' ';
+            } else {
+                interim += result[0].transcript;
+            }
+        }
+        textarea.value = finalText + interim;
+    };
+
+    recognition.onerror = (e) => {
+        console.error('Speech recognition error:', e.error);
+        if (e.error !== 'no-speech') showToast('Lỗi ghi âm: ' + e.error, 'error');
+        stopRecording();
+    };
+
+    recognition.onend = () => {
+        if (state.isRecording) {
+            try { recognition.start(); } catch(e) {}
+        }
+    };
+
+    state.recognition = recognition;
+    recognition.start();
+}
+
+function stopRecording() {
+    state.isRecording = false;
+    if (state.recognition) {
+        try { state.recognition.stop(); } catch(e) {}
+        state.recognition = null;
+    }
+    document.getElementById('btn-mic').classList.remove('recording');
+    document.getElementById('voice-status').textContent = 'Nhấn để ghi âm';
+    // Save final text
+    state.voiceText = document.getElementById('voice-text').value;
+}
+
+/* ── Submit Report ────────────────────────────────────────── */
+async function submitReport() {
+    if (state.submitting) return;
+
+    stopRecording();
+
+    const voiceText = document.getElementById('voice-text').value.trim();
+
+    if (!state.roomId) { showToast('Thiếu mã phòng', 'error'); return; }
+    if (state.photos.length === 0) { showToast('Hãy chụp ít nhất 1 ảnh', 'error'); return; }
+
+    state.submitting = true;
+    showLoading('Đang gửi báo cáo...');
+
+    try {
+        // If any photos failed to upload, retry now
+        const photoUrls = [];
+        for (const photo of state.photos) {
+            if (photo.fileUrl) {
+                photoUrls.push(photo.fileUrl);
+            } else {
+                // Retry upload from dataUrl
+                try {
+                    const res = await fetch(photo.dataUrl);
+                    const blob = await res.blob();
+                    const fd = new FormData();
+                    fd.append('file', blob, `photo_${Date.now()}.jpg`);
+                    const uploadRes = await api.uploadForm('/api/upload', fd);
+                    photoUrls.push(uploadRes.file_url);
+                } catch (uploadErr) {
+                    console.warn('Photo upload failed on submit:', uploadErr);
+                    photoUrls.push('');
+                }
+            }
+        }
+
+        await api.post('/api/reports', {
+            room_id: state.roomId,
+            photos: photoUrls.filter(Boolean),
+            voice_text: voiceText,
+        });
+
+        hideLoading();
+        state.submitting = false;
+        navigateTo('success');
+        initSuccessScreen();
+    } catch (err) {
+        hideLoading();
+        state.submitting = false;
+        showToast('Gửi thất bại: ' + err.message, 'error');
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCREEN 4 – SUCCESS
+   ═══════════════════════════════════════════════════════════ */
+function initSuccessScreen() {
+    document.getElementById('success-room-label').textContent = `PHÒNG ${state.roomId}`;
+
+    // Reset state for next room
+    const capturedRoom = state.roomId;
+    state.photos = [];
+    state.voiceText = '';
+    state.roomId = null;
+
+    // Countdown
+    let secs = 3;
+    document.getElementById('countdown').textContent = secs;
+    clearInterval(state.countdownTimer);
+    state.countdownTimer = setInterval(() => {
+        secs--;
+        const el = document.getElementById('countdown');
+        if (el) el.textContent = secs;
+        if (secs <= 0) {
+            clearInterval(state.countdownTimer);
+            resetToQR();
+        }
+    }, 1000);
+}
+
+function resetToQR() {
+    clearInterval(state.countdownTimer);
+    // Reset QR screen
+    document.getElementById('manual-room').value = '';
+    navigateTo('qr');
+}
+
+function initSuccessButtons() {
+    document.getElementById('btn-new-room').addEventListener('click', () => {
+        clearInterval(state.countdownTimer);
+        resetToQR();
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+    // Wire up all one-time event listeners
+    initQRScreen();
+    initCameraScreen();
+    initReportButtons();
+    initSuccessButtons();
+
+    // Loading overlay hidden by default
+    document.getElementById('loading-overlay').classList.add('hidden');
+
+    // Health check (silent)
+    api.get('/health').catch(() => {});
+
+    console.log('Housekeeping QR App ready');
+});
+
+/* ── XSS helper (not used in innerHTML here, but available) ── */
+function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+}
+
+</script>
+</body>
+</html>
