@@ -17,3 +17,6 @@ boto3
 
 # Excel handling
 openpyxl
+
+# QR code generation
+qrcode[pil]
