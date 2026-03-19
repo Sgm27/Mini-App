@@ -220,7 +220,7 @@ def handle_deploy():
     print()
 
 
-async def chat(prompt: str):
+def chat(prompt: str):
     """Send a message to Claude and print the streamed response."""
     global SESSION_ID
 
@@ -249,7 +249,8 @@ async def chat(prompt: str):
         allowed_tools=["mcp__mysql__*"] if CURRENT_DB else [],
         cwd=CWD,
         permission_mode="bypassPermissions",
-        setting_sources=["user", "project", "local"],
+        # setting_sources=["user", "project", "local"],
+        setting_sources=["project", "local"],
         model="sonnet",
         effort="medium",
     )
@@ -259,9 +260,10 @@ async def chat(prompt: str):
 
     log_messages: list[dict] = []
 
-    try:
+    async def _stream():
+        nonlocal log_messages
+        global SESSION_ID
         async for msg in query(prompt=prompt, options=options):
-            # Serialize every message for the log
             log_messages.append(_serialize_message(msg))
 
             if isinstance(msg, AssistantMessage):
@@ -285,6 +287,8 @@ async def chat(prompt: str):
             elif isinstance(msg, ResultMessage):
                 SESSION_ID = msg.session_id
 
+    try:
+        asyncio.run(_stream())
         print(f"\n{'─' * 50}")
     except Exception as e:
         log_messages.append({"type": "error", "error": str(e)})
@@ -318,7 +322,7 @@ def _summarize_tool(name: str, args: dict | None) -> str:
     return f"({keys})"
 
 
-async def main():
+def main():
     os.makedirs(CWD, exist_ok=True)
     print("Claude Chat (type 'exit' to quit)")
     print("  /new-project <name> — Create a new project (MySQL DB + template)")
@@ -354,7 +358,7 @@ async def main():
             continue
 
         print("\nClaude: ", end="", flush=True)
-        await chat(user_input)
+        chat(user_input)
 
         # Auto-deploy after AI finishes building
         if CURRENT_PROJECT:
@@ -363,4 +367,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
