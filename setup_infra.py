@@ -45,6 +45,53 @@ RDS_INSTANCE_CLASS = "db.t3.micro"
 # EFS Configuration
 EFS_MOUNT_PATH = "/mnt/efs"
 
+# S3 Configuration (CodeBuild source uploads)
+S3_BUCKET_PREFIX = "mini-app-lambda-src"
+
+# CodeBuild IAM Role Configuration
+CODEBUILD_ROLE_NAME = "codebuild-mini-app-role"
+CODEBUILD_TRUST_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {"Service": "codebuild.amazonaws.com"},
+            "Action": "sts:AssumeRole",
+        }
+    ],
+}
+CODEBUILD_INLINE_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": ["ecr:GetAuthorizationToken"],
+            "Resource": "*",
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:PutImage",
+                "ecr:InitiateLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:CompleteLayerUpload",
+            ],
+            "Resource": "*",
+        },
+        {
+            "Effect": "Allow",
+            "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+            "Resource": "*",
+        },
+        {
+            "Effect": "Allow",
+            "Action": ["s3:GetObject", "s3:GetObjectVersion"],
+            "Resource": f"arn:aws:s3:::{S3_BUCKET_PREFIX}-*/*",
+        },
+    ],
+}
+
 # IAM Role Configuration
 ROLE_NAME = "lambda-basic-execution-role"
 TRUST_POLICY = {
@@ -506,7 +553,69 @@ def setup_rds(session, subnet_ids: list, rds_sg_id: str) -> dict:
 
 
 # ─────────────────────────────────────────────
-# Step 5: Update .env
+# Step 5: S3 Bucket (CodeBuild source uploads)
+# ─────────────────────────────────────────────
+def setup_s3_bucket(session) -> dict:
+    """Create S3 bucket for CodeBuild source zip uploads."""
+    sts = session.client("sts")
+    account_id = sts.get_caller_identity()["Account"]
+    bucket_name = f"{S3_BUCKET_PREFIX}-{account_id}"
+
+    s3 = session.client("s3")
+    try:
+        s3.head_bucket(Bucket=bucket_name)
+        print(f"  S3 bucket already exists: {bucket_name}")
+    except s3.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] in ("404", "NoSuchBucket"):
+            kwargs = {"Bucket": bucket_name}
+            if REGION != "us-east-1":
+                kwargs["CreateBucketConfiguration"] = {"LocationConstraint": REGION}
+            s3.create_bucket(**kwargs)
+            s3.put_bucket_tagging(
+                Bucket=bucket_name,
+                Tagging={"TagSet": [{"Key": "Project", "Value": PROJECT_TAG}]},
+            )
+            print(f"  Created S3 bucket: {bucket_name}")
+        else:
+            raise
+
+    return {"s3_bucket_name": bucket_name}
+
+
+# ─────────────────────────────────────────────
+# Step 6: IAM Role for CodeBuild
+# ─────────────────────────────────────────────
+def setup_codebuild_role(session) -> dict:
+    """Create IAM role for CodeBuild with ECR push + S3 read + CloudWatch Logs permissions."""
+    iam = session.client("iam")
+
+    try:
+        resp = iam.get_role(RoleName=CODEBUILD_ROLE_NAME)
+        role_arn = resp["Role"]["Arn"]
+        print(f"  CodeBuild role already exists: {role_arn}")
+    except iam.exceptions.NoSuchEntityException:
+        resp = iam.create_role(
+            RoleName=CODEBUILD_ROLE_NAME,
+            AssumeRolePolicyDocument=json.dumps(CODEBUILD_TRUST_POLICY),
+            Description="IAM role for CodeBuild to build and push Docker images to ECR",
+        )
+        role_arn = resp["Role"]["Arn"]
+        print(f"  Created CodeBuild role: {role_arn}")
+        print("  Waiting 10s for IAM propagation...")
+        time.sleep(10)
+
+    iam.put_role_policy(
+        RoleName=CODEBUILD_ROLE_NAME,
+        PolicyName="codebuild-ecr-s3-logs",
+        PolicyDocument=json.dumps(CODEBUILD_INLINE_POLICY),
+    )
+    print("  Applied inline policy to CodeBuild role")
+
+    return {"codebuild_role_arn": role_arn}
+
+
+# ─────────────────────────────────────────────
+# Step 7: Update .env
 # ─────────────────────────────────────────────
 def update_env(config: dict):
     """Update .env file with new infrastructure config."""
@@ -537,6 +646,10 @@ LAMBDA_SECURITY_GROUP_ID={config["lambda_sg_id"]}
 EFS_FILE_SYSTEM_ID={config["efs_id"]}
 EFS_ACCESS_POINT_ARN={config["access_point_arn"]}
 EFS_MOUNT_PATH=/mnt/efs
+
+# CodeBuild Configuration
+CODEBUILD_ROLE_ARN={config["codebuild_role_arn"]}
+S3_BUCKET_NAME={config["s3_bucket_name"]}
 """
 
     # Remove old MySQL config and old infra block if exists
@@ -552,10 +665,10 @@ EFS_MOUNT_PATH=/mnt/efs
             # End of infra block (next non-empty section or blank+comment)
             if line.strip() == "" and not skip:
                 skip = False
-            elif line.startswith("# ") and "Infrastructure" not in line and not line.startswith("# MySQL") and not line.startswith("# VPC") and not line.startswith("# EFS"):
+            elif line.startswith("# ") and "Infrastructure" not in line and not line.startswith("# MySQL") and not line.startswith("# VPC") and not line.startswith("# EFS") and not line.startswith("# IAM") and not line.startswith("# CodeBuild"):
                 skip = False
                 new_lines.append(line)
-            elif line.startswith("MYSQL_HOST=") or line.startswith("MYSQL_PORT=") or line.startswith("MYSQL_USER=") or line.startswith("MYSQL_PASSWORD=") or line.startswith("VPC_ID=") or line.startswith("LAMBDA_SUBNET") or line.startswith("LAMBDA_SECURITY") or line.startswith("EFS_"):
+            elif line.startswith("MYSQL_HOST=") or line.startswith("MYSQL_PORT=") or line.startswith("MYSQL_USER=") or line.startswith("MYSQL_PASSWORD=") or line.startswith("VPC_ID=") or line.startswith("LAMBDA_SUBNET") or line.startswith("LAMBDA_SECURITY") or line.startswith("EFS_") or line.startswith("AWS_LAMBDA_ROLE_ARN=") or line.startswith("CODEBUILD_ROLE_ARN=") or line.startswith("S3_BUCKET_NAME="):
                 continue
             elif line.strip() == "":
                 continue
@@ -598,42 +711,52 @@ EFS_MOUNT_PATH=/mnt/efs
 # ─────────────────────────────────────────────
 def main():
     print("=" * 60)
-    print("  AWS Infrastructure Setup: IAM + VPC + EFS + RDS")
+    print("  AWS Infrastructure Setup: IAM + VPC + EFS + RDS + CodeBuild")
     print("=" * 60)
 
     session = get_session()
     ec2 = session.client("ec2")
 
-    # Step 1: IAM Role
-    print("\n[1/6] Setting up IAM Role...")
+    # Step 1: IAM Role (Lambda)
+    print("\n[1/8] Setting up Lambda IAM Role...")
     iam_info = setup_iam_role(session)
 
     # Step 2: VPC
-    print("\n[2/6] Setting up VPC + Subnets + Internet Gateway...")
+    print("\n[2/8] Setting up VPC + Subnets + Internet Gateway...")
     vpc_info = setup_vpc(ec2)
     vpc_id = vpc_info["vpc_id"]
     subnet_ids = vpc_info["subnet_ids"]
 
     # Step 3: Security Groups
-    print("\n[3/6] Setting up Security Groups...")
+    print("\n[3/8] Setting up Security Groups...")
     sg_info = setup_security_groups(ec2, vpc_id)
 
     # Step 4: EFS
-    print("\n[4/6] Setting up EFS + Access Point + Mount Targets...")
+    print("\n[4/8] Setting up EFS + Access Point + Mount Targets...")
     efs_info = setup_efs(session, vpc_id, subnet_ids, sg_info["efs_sg_id"])
 
     # Step 5: RDS
-    print("\n[5/6] Setting up RDS MySQL...")
+    print("\n[5/8] Setting up RDS MySQL...")
     rds_info = setup_rds(session, subnet_ids, sg_info["rds_sg_id"])
 
-    # Step 6: Update .env
-    print("\n[6/6] Updating .env file...")
+    # Step 6: S3 Bucket (CodeBuild source)
+    print("\n[6/8] Setting up S3 Bucket for CodeBuild source...")
+    s3_info = setup_s3_bucket(session)
+
+    # Step 7: IAM Role (CodeBuild)
+    print("\n[7/8] Setting up CodeBuild IAM Role...")
+    codebuild_info = setup_codebuild_role(session)
+
+    # Step 8: Update .env
+    print("\n[8/8] Updating .env file...")
     config = {
         **iam_info,
         **vpc_info,
         **sg_info,
         **efs_info,
         **rds_info,
+        **s3_info,
+        **codebuild_info,
     }
     update_env(config)
 
@@ -648,16 +771,18 @@ def main():
     print("  SETUP COMPLETE!")
     print("=" * 60)
     print(f"""
-  IAM Role:     {iam_info["role_arn"]}
-  VPC:          {vpc_id}
-  Subnets:      {", ".join(subnet_ids)}
-  Lambda SG:    {sg_info["lambda_sg_id"]}
-  EFS SG:       {sg_info["efs_sg_id"]}
-  RDS SG:       {sg_info["rds_sg_id"]}
-  EFS ID:       {efs_info["efs_id"]}
-  EFS AP ARN:   {efs_info["access_point_arn"]}
-  RDS Endpoint: {rds_info["rds_endpoint"]}:{rds_info["rds_port"]}
-  RDS User:     {rds_info["rds_user"]}
+  Lambda Role:      {iam_info["role_arn"]}
+  CodeBuild Role:   {codebuild_info["codebuild_role_arn"]}
+  S3 Bucket:        {s3_info["s3_bucket_name"]}
+  VPC:              {vpc_id}
+  Subnets:          {", ".join(subnet_ids)}
+  Lambda SG:        {sg_info["lambda_sg_id"]}
+  EFS SG:           {sg_info["efs_sg_id"]}
+  RDS SG:           {sg_info["rds_sg_id"]}
+  EFS ID:           {efs_info["efs_id"]}
+  EFS AP ARN:       {efs_info["access_point_arn"]}
+  RDS Endpoint:     {rds_info["rds_endpoint"]}:{rds_info["rds_port"]}
+  RDS User:         {rds_info["rds_user"]}
 """)
 
 

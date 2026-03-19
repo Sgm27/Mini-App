@@ -1,13 +1,14 @@
 """
-Deploy a FastAPI backend to AWS Lambda using Docker container image.
+Deploy a FastAPI backend to AWS Lambda using Docker container image via AWS CodeBuild.
 
 Flow:
-  1. Create/get IAM role
-  2. Create ECR repository (if needed)
-  3. Build Docker image
-  4. Push image to ECR
-  5. Create/update Lambda function from container image
-  6. Create Function URL (public)
+  1. Ensure Dockerfile and handler.py exist
+  2. Use pre-created IAM role from .env
+  3. Create/get ECR repository
+  4. Zip backend source and upload to S3
+  5. Create/update CodeBuild project
+  6. Trigger CodeBuild (docker build + push to ECR)
+  7. Create/update Lambda function from container image
 
 Usage:
     from utils import deploy_project
@@ -15,11 +16,11 @@ Usage:
     print(info.function_url)
 """
 
-import base64
+import io
 import json
 import os
-import subprocess
 import time
+import zipfile
 from dataclasses import dataclass
 from typing import Callable, Optional
 
@@ -134,47 +135,96 @@ def _ensure_lambda_files(backend_dir: str):
             f.write(HANDLER_CONTENT)
 
 
-def _docker_login_ecr(session: boto3.Session) -> str:
-    ecr = session.client("ecr")
-    token_resp = ecr.get_authorization_token()
-    auth = token_resp["authorizationData"][0]
-    registry = auth["proxyEndpoint"]
+BUILDSPEC = """\
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+  build:
+    commands:
+      - docker build --platform linux/amd64 --provenance=false -t $IMAGE_URI .
+  post_build:
+    commands:
+      - docker push $IMAGE_URI
+"""
 
-    decoded = base64.b64decode(auth["authorizationToken"]).decode()
-    username, password = decoded.split(":", 1)
 
-    proc = subprocess.run(
-        ["docker", "login", "--username", username, "--password-stdin", registry],
-        input=password,
-        capture_output=True,
-        text=True,
+def _zip_and_upload_source(session: boto3.Session, backend_dir: str, s3_bucket: str, function_name: str) -> str:
+    """Zip backend_dir and upload to S3. Returns S3 key."""
+    s3_key = f"codebuild-source/{function_name}/source.zip"
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(backend_dir):
+            dirs[:] = [d for d in dirs if d not in ("__pycache__", ".venv", "venv", ".git")]
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, backend_dir)
+                zf.write(file_path, arcname)
+
+    buf.seek(0)
+    session.client("s3").put_object(Bucket=s3_bucket, Key=s3_key, Body=buf.read())
+    return s3_key
+
+
+def _get_or_create_codebuild_project(
+    session: boto3.Session,
+    project_name: str,
+    repo_uri: str,
+    s3_bucket: str,
+    s3_key: str,
+    codebuild_role_arn: str,
+) -> None:
+    """Create or update a CodeBuild project that builds and pushes a Docker image to ECR."""
+    cb = session.client("codebuild")
+    ecr_registry = repo_uri.split("/")[0]
+    image_uri = f"{repo_uri}:latest"
+
+    project_params = dict(
+        source={
+            "type": "S3",
+            "location": f"{s3_bucket}/{s3_key}",
+            "buildspec": BUILDSPEC,
+        },
+        artifacts={"type": "NO_ARTIFACTS"},
+        environment={
+            "type": "LINUX_CONTAINER",
+            "image": "aws/codebuild/standard:7.0",
+            "computeType": "BUILD_GENERAL1_SMALL",
+            "privilegedMode": True,
+            "environmentVariables": [
+                {"name": "ECR_REGISTRY", "value": ecr_registry, "type": "PLAINTEXT"},
+                {"name": "IMAGE_URI", "value": image_uri, "type": "PLAINTEXT"},
+            ],
+        },
+        serviceRole=codebuild_role_arn,
     )
-    if proc.returncode != 0:
-        raise RuntimeError(f"Docker login failed: {proc.stderr}")
-    return registry
+
+    result = cb.batch_get_projects(names=[project_name])
+    if result["projects"]:
+        cb.update_project(name=project_name, **project_params)
+    else:
+        cb.create_project(name=project_name, **project_params)
 
 
-def _build_and_push_image(backend_dir: str, repo_uri: str, tag: str = "latest") -> str:
-    image_uri = f"{repo_uri}:{tag}"
+def _run_codebuild_and_wait(session: boto3.Session, project_name: str) -> None:
+    """Trigger a CodeBuild build and poll until it succeeds or fails."""
+    cb = session.client("codebuild")
+    build_id = cb.start_build(projectName=project_name)["build"]["id"]
 
-    proc = subprocess.run(
-        ["docker", "build", "--platform", "linux/amd64", "--provenance=false", "-t", image_uri, "."],
-        cwd=backend_dir,
-        capture_output=True,
-        text=True,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(f"Docker build failed: {proc.stderr}")
+    while True:
+        build = cb.batch_get_builds(ids=[build_id])["builds"][0]
+        status = build["buildStatus"]
+        phase = build.get("currentPhase", "")
+        print(f"    CodeBuild status: {status} | phase: {phase}")
 
-    proc = subprocess.run(
-        ["docker", "push", image_uri],
-        capture_output=True,
-        text=True,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(f"Docker push failed: {proc.stderr}")
-
-    return image_uri
+        if status == "SUCCEEDED":
+            return
+        if status in ("FAILED", "FAULT", "STOPPED", "TIMED_OUT"):
+            deep_link = build.get("logs", {}).get("deepLink", "")
+            raise RuntimeError(f"CodeBuild {status}. Logs: {deep_link}")
+        time.sleep(15)
 
 
 def _read_backend_env(backend_dir: str) -> dict[str, str]:
@@ -250,19 +300,31 @@ def deploy_project(
     log(3, 7, f"Getting/creating ECR repository '{function_name}'...")
     repo_uri = _get_or_create_ecr_repo(session, function_name)
 
-    # 3. Docker login
-    log(4, 7, "Logging in to ECR...")
-    _docker_login_ecr(session)
+    # 3. Zip source and upload to S3
+    s3_bucket = os.getenv("S3_BUCKET_NAME")
+    codebuild_role_arn = os.getenv("CODEBUILD_ROLE_ARN")
+    if not s3_bucket:
+        raise ValueError("S3_BUCKET_NAME not set in .env")
+    if not codebuild_role_arn:
+        raise ValueError("CODEBUILD_ROLE_ARN not set in .env")
 
-    # 4. Build & push image
-    log(5, 7, "Building and pushing Docker image...")
-    image_uri = _build_and_push_image(backend_dir, repo_uri)
+    log(4, 7, "Zipping and uploading source to S3...")
+    s3_key = _zip_and_upload_source(session, backend_dir, s3_bucket, function_name)
 
-    # 5. Environment variables from backend .env
+    # 4. Create/update CodeBuild project
+    log(5, 7, "Syncing CodeBuild project...")
+    _get_or_create_codebuild_project(session, function_name, repo_uri, s3_bucket, s3_key, codebuild_role_arn)
+
+    # 5. Run CodeBuild and wait
+    log(6, 7, "Building and pushing image via CodeBuild...")
+    _run_codebuild_and_wait(session, function_name)
+    image_uri = f"{repo_uri}:latest"
+
+    # 6. Environment variables from backend .env
     env_vars = _read_backend_env(backend_dir)
 
-    # 6. Create/update Lambda function
-    log(6, 7, "Creating/updating Lambda function...")
+    # 7. Create/update Lambda function
+    log(7, 7, "Creating/updating Lambda function...")
     client = session.client("lambda")
     function_url = None
 
