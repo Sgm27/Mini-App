@@ -13,8 +13,9 @@ out/
 # Testing
 coverage/
 
-# Environment variables
+# Environment variables / secrets
 .env
+.env.json
 .env.backup
 .env.local
 .env.development.local

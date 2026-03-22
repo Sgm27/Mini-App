@@ -25,9 +25,8 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 import boto3
-from dotenv import load_dotenv
 
-load_dotenv(override=True)
+from config import cfg
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REGION = "ap-southeast-1"
@@ -47,8 +46,8 @@ TRUST_POLICY = {
 
 def _get_session() -> boto3.Session:
     return boto3.Session(
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        aws_access_key_id=cfg.get("aws_access_key_id"),
+        aws_secret_access_key=cfg.get("aws_secret_access_key"),
         region_name=REGION,
     )
 
@@ -290,10 +289,10 @@ def deploy_project(
 
     session = _get_session()
 
-    # 1. IAM Role (pre-created, loaded from .env)
-    role_arn = os.getenv("AWS_LAMBDA_ROLE_ARN")
+    # 1. IAM Role
+    role_arn = cfg.get("aws_lambda_role_arn")
     if not role_arn:
-        raise ValueError("AWS_LAMBDA_ROLE_ARN not set in .env")
+        raise ValueError("aws_lambda_role_arn not set in .env.json")
     log(2, 7, f"Using IAM role: {role_arn}")
 
     # 2. ECR Repository
@@ -301,12 +300,12 @@ def deploy_project(
     repo_uri = _get_or_create_ecr_repo(session, function_name)
 
     # 3. Zip source and upload to S3
-    s3_bucket = os.getenv("S3_BUCKET_NAME")
-    codebuild_role_arn = os.getenv("CODEBUILD_ROLE_ARN")
+    s3_bucket = cfg.get("s3_bucket_name")
+    codebuild_role_arn = cfg.get("codebuild_role_arn")
     if not s3_bucket:
-        raise ValueError("S3_BUCKET_NAME not set in .env")
+        raise ValueError("s3_bucket_name not set in .env.json")
     if not codebuild_role_arn:
-        raise ValueError("CODEBUILD_ROLE_ARN not set in .env")
+        raise ValueError("codebuild_role_arn not set in .env.json")
 
     log(4, 7, "Zipping and uploading source to S3...")
     s3_key = _zip_and_upload_source(session, backend_dir, s3_bucket, function_name)
@@ -345,11 +344,11 @@ def deploy_project(
             Timeout=60,
             MemorySize=256,
             VpcConfig={
-                "SubnetIds": os.getenv("LAMBDA_SUBNET_IDS", "").split(","),
-                "SecurityGroupIds": [os.getenv("LAMBDA_SECURITY_GROUP_ID")],
+                "SubnetIds": cfg.get("lambda_subnet_ids", "").split(","),
+                "SecurityGroupIds": [cfg.get("lambda_security_group_id")],
             },
             FileSystemConfigs=[{
-                "Arn": os.getenv("EFS_ACCESS_POINT_ARN"),
+                "Arn": cfg.get("efs_access_point_arn"),
                 "LocalMountPath": "/mnt/efs",
             }],
         )
@@ -379,11 +378,11 @@ def deploy_project(
                     MemorySize=256,
                     Environment={"Variables": env_vars},
                     VpcConfig={
-                        "SubnetIds": os.getenv("LAMBDA_SUBNET_IDS", "").split(","),
-                        "SecurityGroupIds": [os.getenv("LAMBDA_SECURITY_GROUP_ID")],
+                        "SubnetIds": cfg.get("lambda_subnet_ids", "").split(","),
+                        "SecurityGroupIds": [cfg.get("lambda_security_group_id")],
                     },
                     FileSystemConfigs=[{
-                        "Arn": os.getenv("EFS_ACCESS_POINT_ARN"),
+                        "Arn": cfg.get("efs_access_point_arn"),
                         "LocalMountPath": "/mnt/efs",
                     }],
                 )

@@ -13,7 +13,6 @@ import os
 import sys
 from datetime import datetime
 
-from dotenv import load_dotenv
 from claude_agent_sdk import ClaudeAgentOptions, query
 from claude_agent_sdk.types import (
     AssistantMessage,
@@ -25,16 +24,15 @@ from claude_agent_sdk.types import (
     ToolResultBlock,
 )
 
+from config import cfg
 from utils import APP_BUILDER_SYSTEM_PROMPT, create_project, deploy_project, merge_frontend
-
-load_dotenv(override=True)  
 
 # Allow running inside a Claude Code session (e.g. VSCode terminal)
 os.environ.pop("CLAUDECODE", None)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-WORKSPACE = os.getenv("WORKSPACE_DIR", "workspace")
-LOG_DIR = os.path.join(BASE_DIR, os.getenv("LOG_DIR", "logs"))
+WORKSPACE = cfg.get("workspace_dir", "workspace")
+LOG_DIR = os.path.join(BASE_DIR, cfg.get("log_dir", "logs"))
 CWD = os.path.join(BASE_DIR, WORKSPACE)
 SESSION_ID = None
 CURRENT_DB = ""
@@ -231,10 +229,10 @@ def chat(prompt: str):
             "command": PYTHON_BIN,
             "args": [MCP_SERVER],
             "env": {
-                "MYSQL_HOST": os.getenv("MYSQL_HOST", "localhost"),
-                "MYSQL_PORT": os.getenv("MYSQL_PORT", "3306"),
-                "MYSQL_USER": os.getenv("MYSQL_USER", "root"),
-                "MYSQL_PASSWORD": os.getenv("MYSQL_PASSWORD", ""),
+                "MYSQL_HOST": cfg.get("mysql_host", "localhost"),
+                "MYSQL_PORT": str(cfg.get("mysql_port", 3306)),
+                "MYSQL_USER": cfg.get("mysql_user", "root"),
+                "MYSQL_PASSWORD": cfg.get("mysql_password", ""),
                 "MYSQL_DATABASE": CURRENT_DB,
             },
         }

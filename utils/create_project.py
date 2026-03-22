@@ -10,22 +10,21 @@ import shutil
 from dataclasses import dataclass
 
 import mysql.connector
-from dotenv import load_dotenv
 
-load_dotenv(override=True)
+from config import cfg
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_DIR = os.path.join(BASE_DIR, "full_stack_template_html")
 
-EFS_MOUNT_PATH = os.getenv("EFS_MOUNT_PATH", "/mnt/efs")
+EFS_MOUNT_PATH = cfg.get("efs_mount_path", "/mnt/efs")
 
 
 def _get_mysql_config() -> dict:
     return {
-        "host": os.getenv("MYSQL_HOST", "localhost"),
-        "port": int(os.getenv("MYSQL_PORT", "3306")),
-        "user": os.getenv("MYSQL_USER", "root"),
-        "password": os.getenv("MYSQL_PASSWORD", ""),
+        "host": cfg.get("mysql_host", "localhost"),
+        "port": int(cfg.get("mysql_port", 3306)),
+        "user": cfg.get("mysql_user", "root"),
+        "password": cfg.get("mysql_password", ""),
     }
 
 
@@ -40,7 +39,7 @@ class ProjectInfo:
 
     @property
     def project_dir(self) -> str:
-        workspace = os.getenv("WORKSPACE_DIR", "workspace")
+        workspace = cfg.get("workspace_dir", "workspace")
         return os.path.join(BASE_DIR, workspace, self.project_name)
 
     def to_dict(self) -> dict:
@@ -90,7 +89,7 @@ def create_project(
         raise RuntimeError(f"Failed to create MySQL database: {e}")
 
     # 2. Copy template to workspace
-    workspace = os.getenv("WORKSPACE_DIR", "workspace")
+    workspace = cfg.get("workspace_dir", "workspace")
     project_dir = os.path.join(BASE_DIR, workspace, name)
 
     if os.path.exists(project_dir):
