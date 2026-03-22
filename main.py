@@ -252,7 +252,7 @@ def chat(prompt: str):
         # setting_sources=["user", "project", "local"],
         setting_sources=["project", "local"],
         model="sonnet",
-        effort="medium",
+        effort="high",
     )
 
     if SESSION_ID:

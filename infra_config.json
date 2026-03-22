@@ -1,19 +1,21 @@
 {
-  "role_arn": "arn:aws:iam::270717776915:role/lambda-basic-execution-role",
+  "role_arn": "arn:aws:iam::005859449779:role/lambda-basic-execution-role",
   "role_created": false,
-  "vpc_id": "vpc-036920530a55151f9",
+  "vpc_id": "vpc-015045083a311acf4",
   "subnet_ids": [
-    "subnet-0ec717b7d9edef3d0",
-    "subnet-00292161ee5c8cd4e"
+    "subnet-00f3d8fdc0938f836",
+    "subnet-09799e37f47e08ba4"
   ],
-  "igw_id": "igw-0593846e6723e947b",
-  "lambda_sg_id": "sg-0456ad2179c68814c",
-  "efs_sg_id": "sg-08a983807c96d6059",
-  "rds_sg_id": "sg-07a0b8d477d76afa5",
-  "efs_id": "fs-0e7f535c001f89c86",
-  "access_point_arn": "arn:aws:elasticfilesystem:ap-southeast-1:270717776915:access-point/fsap-0c9cb41a153b3888f",
-  "rds_endpoint": "mini-app-db.cxq488kkon3e.ap-southeast-1.rds.amazonaws.com",
+  "igw_id": "igw-091d318699e62270e",
+  "lambda_sg_id": "sg-0bf3d1f184c5653b4",
+  "efs_sg_id": "sg-0c62e08a0da80909b",
+  "rds_sg_id": "sg-0442893a81ac9ba9f",
+  "efs_id": "fs-03010d72b828bb9bf",
+  "access_point_arn": "arn:aws:elasticfilesystem:ap-southeast-1:005859449779:access-point/fsap-0c3c80a9ce3051215",
+  "rds_endpoint": "mini-app-db.cx6g0gy84qmq.ap-southeast-1.rds.amazonaws.com",
   "rds_port": 3306,
   "rds_user": "admin",
-  "rds_password": "sonktx12345"
+  "rds_password": "sonktx12345",
+  "s3_bucket_name": "mini-app-lambda-src-005859449779",
+  "codebuild_role_arn": "arn:aws:iam::005859449779:role/codebuild-mini-app-role"
 }
