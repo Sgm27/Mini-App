@@ -39,7 +39,6 @@ CURRENT_DB = ""
 CURRENT_PROJECT = ""
 
 PYTHON_BIN = sys.executable
-MCP_SERVER = os.path.join(BASE_DIR, "utils", "mcp_server.py")
 
 
 def _serialize_block(block) -> dict:
@@ -222,29 +221,24 @@ def chat(prompt: str):
     """Send a message to Claude and print the streamed response."""
     global SESSION_ID
 
-    mcp_servers = {}
+    # Build DB connection info for the system prompt
+    db_prompt = ""
     if CURRENT_DB:
-        mcp_servers["mysql"] = {
-            "type": "stdio",
-            "command": PYTHON_BIN,
-            "args": [MCP_SERVER],
-            "env": {
-                "MYSQL_HOST": cfg.get("mysql_host", "localhost"),
-                "MYSQL_PORT": str(cfg.get("mysql_port", 3306)),
-                "MYSQL_USER": cfg.get("mysql_user", "root"),
-                "MYSQL_PASSWORD": cfg.get("mysql_password", ""),
-                "MYSQL_DATABASE": CURRENT_DB,
-            },
-        }
+        db_prompt = (
+            f"\n\n## DATABASE CONNECTION INFO\n"
+            f"- Host: {cfg.get('mysql_host', 'localhost')}\n"
+            f"- Port: {cfg.get('mysql_port', 3306)}\n"
+            f"- User: {cfg.get('mysql_user', 'root')}\n"
+            f"- Password: {cfg.get('mysql_password', '')}\n"
+            f"- Database: {CURRENT_DB}\n"
+        )
 
     options = ClaudeAgentOptions(
         system_prompt={
             "type": "preset",
             "preset": "claude_code",
-            "append": APP_BUILDER_SYSTEM_PROMPT,
+            "append": APP_BUILDER_SYSTEM_PROMPT + db_prompt,
         },
-        mcp_servers=mcp_servers,
-        allowed_tools=["mcp__mysql__*"] if CURRENT_DB else [],
         cwd=CWD,
         permission_mode="bypassPermissions",
         # setting_sources=["user", "project", "local"],

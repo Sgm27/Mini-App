@@ -122,11 +122,23 @@ Respect this layout—avoid renames unless required to fix a bug.
   - For schema changes, add SQL migration files under `database/002_feature.sql`, `003_other.sql`, etc.
   - Use MySQL syntax in migration files: `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`.
   - Seed data through `db/init_db.py` if needed.
-  - **DATABASE OPERATIONS — MCP SERVER ONLY (CRITICAL):**
-    - **ALWAYS** interact with MySQL through the MCP server tools (`mcp__mysql__execute`, `mcp__mysql__query`, `mcp__mysql__list_tables`, `mcp__mysql__describe`, etc.).
-    - **NEVER** use Python code (pymysql, sqlalchemy CLI, scripts) or Bash commands (`mysql` CLI, shell pipes) to directly query, modify, or inspect the database.
+  - **DATABASE OPERATIONS — PYTHON ONLY (CRITICAL):**
+    - **ALWAYS** interact with MySQL using Python code via Bash tool: `python3 -c "import pymysql; ..."` or `python -c "import pymysql; ..."`.
+    - Database connection info (host, port, user, password, database) is provided in the **DATABASE CONNECTION INFO** section of the system prompt. Use those values directly in your pymysql connection.
     - This applies to ALL database operations: creating tables, running migrations, seeding data, checking schema, querying data, debugging, etc.
-    - Write SQL migration files to `database/` as before, but **execute** them via `mcp__mysql__execute`, NOT via `mysql` CLI or Python scripts.
+    - Write SQL migration files to `database/` as before, then **execute** them via `python3 -c` with pymysql.
+    - Example pattern:
+      ```
+      python3 -c "
+      import pymysql
+      conn = pymysql.connect(host='HOST', port=PORT, user='USER', password='PASS', database='DB', charset='utf8mb4')
+      cur = conn.cursor()
+      cur.execute('SHOW TABLES')
+      print(cur.fetchall())
+      conn.close()
+      "
+      ```
+    - **NEVER** use `mysql` CLI directly (it may not be installed). Always use pymysql via Python.
 - **File/Binary storage — EFS (CRITICAL):**
   - **ALL binary files** (images, PDFs, audio, video, documents, etc.) **MUST be stored on EFS**, never in database BLOBs.
   - Upload and serve endpoints are **already provided**. DO NOT recreate or duplicate them:
