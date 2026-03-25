@@ -1,0 +1,63 @@
+-- 002_nha_hang.sql: Restaurant tables schema
+
+CREATE TABLE IF NOT EXISTS danh_muc_mon (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ten_danh_muc VARCHAR(100) NOT NULL,
+  thu_tu INT DEFAULT 0,
+  icon VARCHAR(50) DEFAULT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS mon_an (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ten_mon VARCHAR(200) NOT NULL,
+  gia DECIMAL(10,0) NOT NULL,
+  hinh_anh VARCHAR(500) DEFAULT NULL,
+  mo_ta TEXT DEFAULT NULL,
+  danh_muc_id INT NOT NULL,
+  active TINYINT(1) DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (danh_muc_id) REFERENCES danh_muc_mon(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS nguyen_lieu (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ten_nguyen_lieu VARCHAR(200) NOT NULL,
+  don_vi VARCHAR(50) NOT NULL,
+  so_luong_ton DECIMAL(10,3) DEFAULT 0,
+  nguong_canh_bao DECIMAL(10,3) DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS cong_thuc_mon (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  mon_an_id INT NOT NULL,
+  nguyen_lieu_id INT NOT NULL,
+  so_luong_can DECIMAL(10,3) NOT NULL,
+  FOREIGN KEY (mon_an_id) REFERENCES mon_an(id) ON DELETE CASCADE,
+  FOREIGN KEY (nguyen_lieu_id) REFERENCES nguyen_lieu(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_mon_nguyen_lieu (mon_an_id, nguyen_lieu_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS don_hang (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ma_ban VARCHAR(50) DEFAULT NULL,
+  trang_thai ENUM('cho_xac_nhan','da_xac_nhan','da_huy') DEFAULT 'cho_xac_nhan',
+  tong_tien DECIMAL(10,0) DEFAULT 0,
+  ghi_chu TEXT DEFAULT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS chi_tiet_don_hang (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  don_hang_id INT NOT NULL,
+  mon_an_id INT NOT NULL,
+  so_luong INT NOT NULL DEFAULT 1,
+  don_gia DECIMAL(10,0) NOT NULL,
+  FOREIGN KEY (don_hang_id) REFERENCES don_hang(id) ON DELETE CASCADE,
+  FOREIGN KEY (mon_an_id) REFERENCES mon_an(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO schema_migrations (version) VALUES ('002_nha_hang');

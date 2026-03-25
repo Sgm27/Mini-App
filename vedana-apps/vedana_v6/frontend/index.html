@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Ứng dụng báo cáo dọn phòng khách sạn">
+    <title>Báo Cáo Phòng</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+    <!-- ================================================
+         SCREEN 1: QR SCAN
+         ================================================ -->
+    <div id="screen-qr" class="screen screen--active">
+        <div class="screen-content">
+            <div class="screen-header">
+                <h1 class="page-title">Quét mã phòng</h1>
+            </div>
+
+            <div class="scanner-wrap">
+                <div class="scanner-box" id="scanner-box">
+                    <video id="qr-video" autoplay playsinline muted></video>
+                    <div class="scanner-overlay">
+                        <div class="scanner-frame">
+                            <span class="sc sc--tl"></span>
+                            <span class="sc sc--tr"></span>
+                            <span class="sc sc--bl"></span>
+                            <span class="sc sc--br"></span>
+                            <div class="scanner-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="scan-hint">Đặt mã QR của phòng vào trong khung để quét tự động</p>
+
+            <button class="btn btn--primary btn--full" id="btn-start-scan" onclick="initQRScanner()">
+                Bắt đầu quét
+            </button>
+
+            <!-- Manual fallback -->
+            <div class="manual-entry" id="manual-entry" style="display:none">
+                <p class="manual-label">Hoặc nhập mã phòng thủ công:</p>
+                <div class="input-row">
+                    <input type="text" id="manual-room-id" class="form-input"
+                           placeholder="Ví dụ: 401" maxlength="10"
+                           autocomplete="off" autocorrect="off" spellcheck="false">
+                    <button class="btn btn--secondary btn--small" onclick="enterManualRoom()">Vào</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================
+         SCREEN 2: CAMERA CAPTURE
+         ================================================ -->
+    <div id="screen-camera" class="screen">
+        <div class="camera-shell">
+            <div class="camera-top">
+                <h1 class="room-badge" id="camera-room-title">PHÒNG —</h1>
+                <p class="camera-subtitle">Chụp ảnh sau khi dọn</p>
+            </div>
+
+            <div class="camera-live">
+                <video id="camera-video" autoplay playsinline muted></video>
+            </div>
+
+            <div class="camera-bar">
+                <div class="photo-counter" id="photo-counter">0 / 3</div>
+                <button class="shutter-btn" id="btn-shutter" onclick="capturePhoto()" aria-label="Chụp ảnh">
+                    <div class="shutter-ring">
+                        <div class="shutter-dot"></div>
+                    </div>
+                </button>
+                <button class="btn btn--ghost btn--small" id="btn-skip-cam"
+                        onclick="proceedToReport()" style="visibility:hidden">
+                    Tiếp tục →
+                </button>
+            </div>
+
+            <div class="thumb-strip" id="thumb-strip"></div>
+        </div>
+    </div>
+
+    <!-- ================================================
+         SCREEN 3: ROOM REPORT
+         ================================================ -->
+    <div id="screen-report" class="screen">
+        <div class="screen-content screen-content--padded">
+            <div class="screen-header">
+                <button class="btn-back" onclick="goBackToCamera()" aria-label="Quay lại">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <h1 class="room-badge room-badge--dark" id="report-room-title">PHÒNG —</h1>
+            </div>
+
+            <!-- Photo strip card -->
+            <div class="card card--main">
+                <p class="card-eyebrow">Ảnh đã chụp</p>
+                <div class="photo-strip" id="report-photo-strip"></div>
+            </div>
+
+            <!-- Voice recording card -->
+            <div class="card card--main voice-card">
+                <p class="card-title">Báo cáo bằng giọng nói</p>
+                <div class="mic-zone">
+                    <button class="mic-btn" id="btn-mic" onclick="toggleRecording()" aria-label="Ghi âm">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="white">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2H3v2a9 9 0 0 0 8 8.94V23h2v-2.06A9 9 0 0 0 21 12v-2h-2z"/>
+                        </svg>
+                    </button>
+                    <p class="mic-status" id="mic-status">Nhấn để ghi âm</p>
+                </div>
+                <textarea class="voice-area" id="voice-text"
+                          placeholder="Nội dung báo cáo xuất hiện ở đây sau khi ghi âm..."></textarea>
+            </div>
+
+            <!-- Extra note card -->
+            <div class="card card--secondary">
+                <label class="form-label" for="note-input">Ghi chú thêm (tùy chọn)</label>
+                <input type="text" id="note-input" class="form-input"
+                       placeholder="Thay khăn, bổ sung đồ dùng...">
+            </div>
+        </div>
+
+        <!-- Sticky submit CTA -->
+        <div class="sticky-cta">
+            <button class="btn btn--primary btn--full" id="btn-submit" onclick="submitReport()">
+                GỬI BÁO CÁO
+            </button>
+        </div>
+    </div>
+
+    <!-- ================================================
+         SCREEN 4: SUCCESS
+         ================================================ -->
+    <div id="screen-success" class="screen">
+        <div class="success-shell">
+            <div class="success-circle" id="success-circle">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                     stroke="white" stroke-width="3"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <h1 class="success-title">Gửi báo cáo thành công</h1>
+            <p class="success-sub" id="success-sub">Phòng đã được ghi nhận trong hệ thống</p>
+            <button class="btn btn--primary" id="btn-new-room" onclick="startNewRoom()">
+                Bắt đầu phòng mới
+            </button>
+            <p class="countdown-note">
+                Tự động quay lại sau <span id="countdown">3</span> giây
+            </p>
+        </div>
+    </div>
+
+</div><!-- #app -->
+
+<!-- Hidden canvases -->
+<canvas id="qr-canvas" style="display:none"></canvas>
+<canvas id="capture-canvas" style="display:none"></canvas>
+
+<!-- Toast -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- jsQR for QR code scanning -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
