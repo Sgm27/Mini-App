@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="Checkin Vedana - Hệ thống check-in khách sạn">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Checkin Vedana</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&subset=vietnamese&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-shell">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="top-bar__left" id="topBarLeft"></div>
+            <h1 class="top-bar__title">
+                <span class="top-bar__logo">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 4v4a1 1 0 001 1h4M23 4v4a1 1 0 01-1 1h-4M1 20v-4a1 1 0 011-1h4M23 20v-4a1 1 0 00-1-1h-4"/>
+                        <rect x="5" y="7" width="14" height="10" rx="1"/>
+                    </svg>
+                </span>
+                Checkin Vedana
+            </h1>
+            <div class="top-bar__right" id="topBarRight"></div>
+        </header>
+
+        <!-- Scrollable Content Area -->
+        <main class="content-area">
+            <section id="content">
+                <!-- Dynamic content loaded here -->
+            </section>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="bottom-nav__item bottom-nav__item--active" data-tab="scan">
+                <span class="bottom-nav__icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Check-in</span>
+            </button>
+            <button class="bottom-nav__item" data-tab="history">
+                <span class="bottom-nav__icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 8v4l3 3"/>
+                        <circle cx="12" cy="12" r="10"/>
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Lịch sử</span>
+            </button>
+            <button class="bottom-nav__item" data-tab="info">
+                <span class="bottom-nav__icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                </span>
+                <span class="bottom-nav__label">Thông tin</span>
+            </button>
+        </nav>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

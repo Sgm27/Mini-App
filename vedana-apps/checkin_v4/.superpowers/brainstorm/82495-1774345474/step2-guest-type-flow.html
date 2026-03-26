@@ -1,0 +1,65 @@
+<h2>Bước 2: Luồng chọn loại khách & upload</h2>
+<p class="subtitle">User chọn loại khách trước, rồi upload ảnh giấy tờ tương ứng</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Tab chuyển đổi trên cùng</h3>
+      <p>2 tab "Khách Việt Nam" / "Khách Nước Ngoài" ở đầu Bước 2. Mỗi tab có vùng upload riêng. Kết quả OCR hiển thị chung bên dưới với badge phân biệt loại khách.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-body" style="padding:16px">
+          <div style="display:flex;gap:0;margin-bottom:16px">
+            <div style="flex:1;padding:10px;background:#F26B21;color:white;text-align:center;border-radius:8px 0 0 8px;font-weight:600">🇻🇳 Khách VN</div>
+            <div style="flex:1;padding:10px;background:#e5e7eb;color:#666;text-align:center;border-radius:0 8px 8px 0">🌍 Khách Nước Ngoài</div>
+          </div>
+          <div style="border:2px dashed #ccc;border-radius:8px;padding:24px;text-align:center;color:#888;margin-bottom:16px">
+            📷 Chụp / Chọn ảnh CCCD, CMND, VNeID...
+          </div>
+          <div style="font-size:13px;color:#666;margin-bottom:8px">Danh sách khách đã trích xuất:</div>
+          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+            <span style="background:#16a34a;color:white;font-size:11px;padding:2px 8px;border-radius:4px">VN</span>
+            <span style="font-weight:600">Nguyễn Văn A</span>
+            <span style="color:#888;font-size:13px">001202009143</span>
+          </div>
+          <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:12px;display:flex;align-items:center;gap:8px">
+            <span style="background:#2563eb;color:white;font-size:11px;padding:2px 8px;border-radius:4px">NN</span>
+            <span style="font-weight:600">GARY LEWIS</span>
+            <span style="color:#888;font-size:13px">549588610 • GBR</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Nút "Thêm khách" với dropdown loại</h3>
+      <p>Một nút "Thêm khách" → hiện popup chọn "Khách VN" hoặc "Khách Nước Ngoài" → mở camera/gallery tương ứng. Có thể thêm nhiều lần xen kẽ.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-body" style="padding:16px">
+          <div style="font-size:13px;color:#666;margin-bottom:12px">Danh sách khách (2/3):</div>
+          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+            <span style="background:#16a34a;color:white;font-size:11px;padding:2px 8px;border-radius:4px">VN</span>
+            <span style="font-weight:600">Nguyễn Văn A</span>
+          </div>
+          <div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:12px;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <span style="background:#2563eb;color:white;font-size:11px;padding:2px 8px;border-radius:4px">NN</span>
+            <span style="font-weight:600">GARY LEWIS</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;padding:12px;background:#f0fdf4;border:2px solid #16a34a;border-radius:8px;text-align:center;cursor:pointer">
+              <div style="font-size:20px">🇻🇳</div>
+              <div style="font-size:13px;font-weight:600;color:#16a34a">+ Thêm khách VN</div>
+            </div>
+            <div style="flex:1;padding:12px;background:#eff6ff;border:2px solid #2563eb;border-radius:8px;text-align:center;cursor:pointer">
+              <div style="font-size:20px">🌍</div>
+              <div style="font-size:13px;font-weight:600;color:#2563eb">+ Thêm khách NN</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

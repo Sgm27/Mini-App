@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS rooms (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    room_number VARCHAR(50) NOT NULL UNIQUE,
+    room_type VARCHAR(50) NOT NULL,
+    building VARCHAR(50) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO schema_migrations (version) VALUES ('003_rooms');

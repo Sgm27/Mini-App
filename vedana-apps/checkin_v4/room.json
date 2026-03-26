@@ -1,0 +1,1077 @@
+{
+  "A1": [
+    {
+      "Room": "A1.101",
+      "Type": "JSF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.102",
+      "Type": "SUF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.103",
+      "Type": "JST",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.104",
+      "Type": "DLT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.105",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.106",
+      "Type": "SUF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.107",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.108",
+      "Type": "JSF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.109",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.110",
+      "Type": "SUF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.201",
+      "Type": "SUT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.202",
+      "Type": "JST",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.203",
+      "Type": "DLT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.204",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.205",
+      "Type": "JSF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.206",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.207",
+      "Type": "SUD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.208",
+      "Type": "JST",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.209",
+      "Type": "DLT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.210",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.211",
+      "Type": "JSD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.301",
+      "Type": "DLT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.302",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.303",
+      "Type": "JSF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.304",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.305",
+      "Type": "DLT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.306",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.307",
+      "Type": "SUF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.308",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.309",
+      "Type": "DLT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.310",
+      "Type": "JSF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.311",
+      "Type": "SUF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.401",
+      "Type": "JST",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.402",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.403",
+      "Type": "DLT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.404",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.405",
+      "Type": "JST",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.406",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.407",
+      "Type": "SUD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.408",
+      "Type": "JSF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.409",
+      "Type": "DLT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.410",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.411",
+      "Type": "SUF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.501",
+      "Type": "DLT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.502",
+      "Type": "JSF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.503",
+      "Type": "DLT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.504",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.505",
+      "Type": "DLT",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.506",
+      "Type": "JSF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.507",
+      "Type": "SUF",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.508",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.509",
+      "Type": "JST",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.510",
+      "Type": "DLD",
+      "Building": "A1"
+    },
+    {
+      "Room": "A1.511",
+      "Type": "DLD",
+      "Building": "A1"
+    }
+  ],
+  "VB": [
+    {
+      "Room": "AZ01.01",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ01.02",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ01.03",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ01.04",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ01.05",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ01.06",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ03.01",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ03.02",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ03.03",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ03.04",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ03.05",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ03.06",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "AZ05.14",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "B1",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B10",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B11",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B12",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B13",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B14",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B15",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B16",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B17",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B18",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B19",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B2",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B20",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B21",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B22",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B3",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B4",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B5",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B6",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B7",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B8",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "B9",
+      "Type": "SB",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE02.01",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE02.02",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE02.03",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE02.04",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE02.05",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE03.01",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE03.09",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE04.10",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE04.11",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE05.01",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE06.01",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE06.04",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE06.05",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE06.06",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE06.08",
+      "Type": "VL",
+      "Building": "VB"
+    },
+    {
+      "Room": "SE06.09",
+      "Type": "VL",
+      "Building": "VB"
+    }
+  ],
+  "L1": [
+    {
+      "Room": "L1.101",
+      "Type": "DLT",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.102",
+      "Type": "DLD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.103",
+      "Type": "JSF",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.104",
+      "Type": "SUF",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.105",
+      "Type": "DLT",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.106",
+      "Type": "DLD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.107",
+      "Type": "JSF",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.108",
+      "Type": "DLD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.201",
+      "Type": "SUD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.202",
+      "Type": "JST",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.203",
+      "Type": "DLT",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.204",
+      "Type": "SUF",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.205",
+      "Type": "DLT",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.206",
+      "Type": "JST",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.207",
+      "Type": "DLT",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.208",
+      "Type": "JST",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.301",
+      "Type": "JSF",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.302",
+      "Type": "DLD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.303",
+      "Type": "DLT",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.304",
+      "Type": "SUF",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.305",
+      "Type": "DLT",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.306",
+      "Type": "SUF",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.307",
+      "Type": "DLD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.401",
+      "Type": "JST",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.402",
+      "Type": "DLD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.403",
+      "Type": "JST",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.404",
+      "Type": "SUD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.405",
+      "Type": "JST",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.406",
+      "Type": "DLD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.407",
+      "Type": "JSF",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.408",
+      "Type": "DLD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.501",
+      "Type": "DLT",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.502",
+      "Type": "DLD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.503",
+      "Type": "DLT",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.504",
+      "Type": "SUF",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.505",
+      "Type": "DLT",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.506",
+      "Type": "DLD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.507",
+      "Type": "DLT",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.508",
+      "Type": "JST",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.601",
+      "Type": "SUD",
+      "Building": "L1"
+    },
+    {
+      "Room": "L1.602",
+      "Type": "SUD",
+      "Building": "L1"
+    }
+  ],
+  "L2": [
+    {
+      "Room": "L2.101",
+      "Type": "DLT",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.102",
+      "Type": "DLD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.103",
+      "Type": "JSF",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.104",
+      "Type": "SUF",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.105",
+      "Type": "DLT",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.106",
+      "Type": "DLD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.107",
+      "Type": "JSF",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.108",
+      "Type": "DLD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.201",
+      "Type": "SUD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.202",
+      "Type": "JST",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.203",
+      "Type": "DLT",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.204",
+      "Type": "SUF",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.205",
+      "Type": "DLT",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.206",
+      "Type": "JST",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.207",
+      "Type": "DLT",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.208",
+      "Type": "JST",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.301",
+      "Type": "JSF",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.302",
+      "Type": "DLD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.303",
+      "Type": "DLT",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.304",
+      "Type": "SUF",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.305",
+      "Type": "DLT",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.306",
+      "Type": "SUF",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.307",
+      "Type": "DLD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.401",
+      "Type": "JST",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.402",
+      "Type": "DLD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.403",
+      "Type": "JST",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.404",
+      "Type": "SUD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.405",
+      "Type": "JST",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.406",
+      "Type": "DLD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.407",
+      "Type": "JSF",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.408",
+      "Type": "DLD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.501",
+      "Type": "DLT",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.502",
+      "Type": "DLD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.503",
+      "Type": "DLT",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.504",
+      "Type": "SUF",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.505",
+      "Type": "DLT",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.506",
+      "Type": "DLD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.507",
+      "Type": "DLT",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.508",
+      "Type": "JST",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.601",
+      "Type": "SUD",
+      "Building": "L2"
+    },
+    {
+      "Room": "L2.602",
+      "Type": "SUD",
+      "Building": "L2"
+    }
+  ],
+  "L3": [
+    {
+      "Room": "L3.101",
+      "Type": "DLT",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.102",
+      "Type": "DLD",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.103",
+      "Type": "JSF",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.104",
+      "Type": "SUF",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.105",
+      "Type": "DLT",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.106",
+      "Type": "DLD",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.107",
+      "Type": "JSF",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.108",
+      "Type": "DLD",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.401",
+      "Type": "JST",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.402",
+      "Type": "DLD",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.403",
+      "Type": "JST",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.404",
+      "Type": "SUD",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.405",
+      "Type": "JST",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.406",
+      "Type": "DLD",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.407",
+      "Type": "JSF",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.408",
+      "Type": "DLD",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.501",
+      "Type": "DLT",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.502",
+      "Type": "DLD",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.503",
+      "Type": "DLT",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.504",
+      "Type": "SUF",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.505",
+      "Type": "DLT",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.506",
+      "Type": "DLD",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.507",
+      "Type": "DLT",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.508",
+      "Type": "JST",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.601",
+      "Type": "SUD",
+      "Building": "L3"
+    },
+    {
+      "Room": "L3.602",
+      "Type": "SUD",
+      "Building": "L3"
+    }
+  ]
+}
