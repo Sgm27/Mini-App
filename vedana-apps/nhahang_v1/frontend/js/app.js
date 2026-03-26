@@ -182,6 +182,7 @@ async function loadMenuTab() {
             });
         });
 
+        attachMenuDelegation(c);
         renderMenuTab(c);
     } catch (err) {
         showErrorState(c, 'Không thể tải thực đơn: ' + err.message, loadMenuTab);
@@ -318,38 +319,42 @@ function renderCartBar() {
         </div>`;
 }
 
+function attachMenuDelegation(c) {
+    // Qty buttons + view-cart (event delegation, attach ONCE)
+    if (c._menuDelegationAttached) return;
+    c._menuDelegationAttached = true;
+    c.addEventListener('click', e => {
+        // Qty buttons
+        const actionBtn = e.target.closest('[data-action]');
+        if (actionBtn) {
+            const dishId = parseInt(actionBtn.dataset.dish);
+            if (actionBtn.dataset.action === 'add') {
+                addToCart(dishId);
+            } else if (actionBtn.dataset.action === 'remove') {
+                removeFromCart(dishId);
+            }
+            return;
+        }
+        // View cart button
+        if (e.target.closest('#view-cart-btn')) {
+            document.querySelectorAll('.bottom-nav__item')
+                .forEach(i => i.classList.remove('bottom-nav__item--active'));
+            document.querySelector('[data-tab="order"]').classList.add('bottom-nav__item--active');
+            state.currentTab = 'order';
+            loadOrderTab();
+            return;
+        }
+    });
+}
+
 function attachMenuEvents(c) {
-    // Category pills
+    // Category pills (re-binds after each render since innerHTML replaces them)
     c.querySelectorAll('.category-pill').forEach(btn => {
         btn.addEventListener('click', () => {
             state.currentCategory = parseInt(btn.dataset.cat);
             renderMenuTab(c);
         });
     });
-
-    // Qty buttons (event delegation)
-    c.addEventListener('click', e => {
-        const btn = e.target.closest('[data-action]');
-        if (!btn) return;
-        const dishId = parseInt(btn.dataset.dish);
-        if (btn.dataset.action === 'add') {
-            addToCart(dishId);
-        } else if (btn.dataset.action === 'remove') {
-            removeFromCart(dishId);
-        }
-    });
-
-    // View cart button
-    const vcBtn = c.querySelector('#view-cart-btn');
-    if (vcBtn) {
-        vcBtn.addEventListener('click', () => {
-            document.querySelectorAll('.bottom-nav__item')
-                .forEach(i => i.classList.remove('bottom-nav__item--active'));
-            document.querySelector('[data-tab="order"]').classList.add('bottom-nav__item--active');
-            state.currentTab = 'order';
-            loadOrderTab();
-        });
-    }
 }
 
 function addToCart(dishId) {

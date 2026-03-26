@@ -1,0 +1,78 @@
+from datetime import date, datetime
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_db
+from app.models.kitchen import MonAn, NguyenLieu, PhieuNhapKho
+from app.schemas.kitchen import LowStockItem, ReportOverview
+from app.services.inventory_service import build_import_out, get_imports
+
+router = APIRouter(prefix="/reports")
+
+
+@router.get("/overview", response_model=ReportOverview)
+def get_overview(db: Session = Depends(get_db)):
+    total_materials = db.query(NguyenLieu).count()
+    total_available = db.query(MonAn).filter(MonAn.active == True).count()  # noqa: E712
+    total_unavailable = db.query(MonAn).filter(MonAn.active == False).count()  # noqa: E712
+
+    low_stock = 0
+    out_of_stock = 0
+    materials = db.query(NguyenLieu).all()
+    for mat in materials:
+        qty = float(mat.so_luong_ton)
+        min_s = float(mat.nguong_canh_bao)
+        if qty <= 0:
+            out_of_stock += 1
+        elif min_s > 0 and qty < min_s:
+            low_stock += 1
+
+    today = date.today()
+    today_start = datetime.combine(today, datetime.min.time())
+    today_end = datetime.combine(today, datetime.max.time())
+    today_records = db.query(PhieuNhapKho).filter(
+        PhieuNhapKho.created_at >= today_start,
+        PhieuNhapKho.created_at <= today_end,
+    ).all()
+    today_items = sum(len(r.items) for r in today_records)
+
+    return ReportOverview(
+        total_materials=total_materials,
+        total_available_dishes=total_available,
+        total_unavailable_dishes=total_unavailable,
+        low_stock_count=low_stock,
+        out_of_stock_count=out_of_stock,
+        today_import_count=len(today_records),
+        today_import_items=today_items,
+    )
+
+
+@router.get("/history")
+def get_history(limit: int = 20, import_date: date | None = None, db: Session = Depends(get_db)):
+    records = get_imports(db, limit=limit, import_date=import_date)
+    return [build_import_out(r) for r in records]
+
+
+@router.get("/low-stock", response_model=list[LowStockItem])
+def get_low_stock(db: Session = Depends(get_db)):
+    materials = db.query(NguyenLieu).all()
+    result = []
+    for mat in materials:
+        qty = float(mat.so_luong_ton)
+        min_s = float(mat.nguong_canh_bao)
+        if qty <= 0:
+            status = "out"
+        elif min_s > 0 and qty < min_s:
+            status = "low"
+        else:
+            continue
+        result.append(LowStockItem(
+            material_id=mat.id,
+            material_name=mat.ten_nguyen_lieu,
+            unit=mat.don_vi,
+            quantity=qty,
+            min_stock=min_s,
+            status=status,
+        ))
+    return result
