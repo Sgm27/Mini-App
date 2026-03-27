@@ -81,6 +81,15 @@ class ImportReceipt(Base):
     received_by: Mapped[str] = mapped_column(String(100), default="Nhan vien kho")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
+    # Vedana receiving note header fields
+    receipt_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    vendor_name: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    period: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    voucher_no: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    invoice_serial: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    invoice_no: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
     items: Mapped[list["ImportReceiptItem"]] = relationship("ImportReceiptItem", back_populates="import_receipt", cascade="all, delete-orphan")
 
 
@@ -93,6 +102,14 @@ class ImportReceiptItem(Base):
     ingredient_id: Mapped[int] = mapped_column(Integer, ForeignKey("ingredients.id", ondelete="RESTRICT"))
     quantity: Mapped[Decimal] = mapped_column(Numeric(10, 3), nullable=False)
     unit: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # Vedana receiving note item fields
+    item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    item_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    unit_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    amount: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True)
+    location: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    acc_no: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     import_receipt: Mapped["ImportReceipt"] = relationship("ImportReceipt", back_populates="items")
     ingredient: Mapped["Ingredient"] = relationship("Ingredient", back_populates="import_items")
