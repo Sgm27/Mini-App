@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     upload_dir: Annotated[str, Field(default="/mnt/efs/uploads")]
 
     anthropic_api_key: Annotated[str, Field(default="")]
+    openai_api_key: Annotated[str, Field(default="")]
 
     @computed_field
     @property
