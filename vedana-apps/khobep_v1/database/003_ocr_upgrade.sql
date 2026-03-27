@@ -18,4 +18,5 @@ ALTER TABLE import_receipt_items
   ADD COLUMN location VARCHAR(50) NULL,
   ADD COLUMN acc_no VARCHAR(50) NULL;
 
-INSERT INTO schema_migrations (version, description) VALUES ('003', 'OCR upgrade: add receiving note fields');
+-- schema_migrations table only has (version, applied_at) columns
+INSERT INTO schema_migrations (version) VALUES ('003');
