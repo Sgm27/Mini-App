@@ -47,7 +47,9 @@ const state = {
   currentTab: 'import',
   // Import screen
   importMethod: null,    // 'camera' | 'voice'
-  reviewItems: [],       // [{name, quantity, unit, material_id}]
+  reviewItems: [],       // [{name, quantity, unit, material_id, item_code, unit_price, amount, location, acc_no, is_new}]
+  receiptHeader: null,   // {receipt_date, description, vendor_name, period, voucher_no, invoice_serial, invoice_no}
+  receiptSummary: null,  // {sub_amount, discount, vat, total_amount}
   capturedImageB64: null,
   // Inventory screen
   invSubTab: 'materials',
@@ -167,6 +169,8 @@ function renderImportTab() {
   state.reviewItems = [];
   state.capturedImageB64 = null;
   state.importMethod = null;
+  state.receiptHeader = null;
+  state.receiptSummary = null;
   renderImportSelectPage();
 }
 
@@ -232,6 +236,39 @@ function renderImportReviewPage() {
     </button>
   `;
 
+  const h = state.receiptHeader;
+  const s = state.receiptSummary;
+
+  const headerHtml = h ? `
+    <div class="receipt-header-card">
+      <div class="receipt-header-card__title">${icon('clipboard', 16)} Thông tin phiếu nhập</div>
+      <div class="receipt-header-grid">
+        ${h.voucher_no ? `<div class="receipt-field"><span class="receipt-field__label">Số phiếu</span><span class="receipt-field__value">${escapeHtml(h.voucher_no)}</span></div>` : ''}
+        ${h.receipt_date ? `<div class="receipt-field"><span class="receipt-field__label">Ngày nhập</span><span class="receipt-field__value">${escapeHtml(h.receipt_date)}</span></div>` : ''}
+        ${h.vendor_name ? `<div class="receipt-field receipt-field--wide"><span class="receipt-field__label">Nhà cung cấp</span><span class="receipt-field__value">${escapeHtml(h.vendor_name)}</span></div>` : ''}
+        ${h.description ? `<div class="receipt-field receipt-field--wide"><span class="receipt-field__label">Nội dung</span><span class="receipt-field__value">${escapeHtml(h.description)}</span></div>` : ''}
+        ${h.invoice_no ? `<div class="receipt-field"><span class="receipt-field__label">Số HĐ</span><span class="receipt-field__value">${escapeHtml(h.invoice_no)}</span></div>` : ''}
+        ${h.invoice_serial ? `<div class="receipt-field"><span class="receipt-field__label">Seri HĐ</span><span class="receipt-field__value">${escapeHtml(h.invoice_serial)}</span></div>` : ''}
+        ${h.period ? `<div class="receipt-field"><span class="receipt-field__label">Kỳ KT</span><span class="receipt-field__value">${escapeHtml(h.period)}</span></div>` : ''}
+      </div>
+    </div>
+  ` : '';
+
+  const summaryHtml = s ? `
+    <div class="receipt-summary-card">
+      <div class="receipt-summary-row">
+        <span>Thành tiền</span>
+        <span>${s.sub_amount != null ? Number(s.sub_amount).toLocaleString('vi-VN') + ' đ' : '-'}</span>
+      </div>
+      ${s.discount ? `<div class="receipt-summary-row"><span>Giảm giá</span><span>${Number(s.discount).toLocaleString('vi-VN')} đ</span></div>` : ''}
+      ${s.vat ? `<div class="receipt-summary-row"><span>Thuế GTGT</span><span>${Number(s.vat).toLocaleString('vi-VN')} đ</span></div>` : ''}
+      <div class="receipt-summary-row receipt-summary-row--total">
+        <span>Tổng cộng</span>
+        <span>${s.total_amount != null ? Number(s.total_amount).toLocaleString('vi-VN') + ' đ' : '-'}</span>
+      </div>
+    </div>
+  ` : '';
+
   const content = document.getElementById('content');
   content.innerHTML = `
     <div style="padding: var(--space-lg);">
@@ -239,13 +276,17 @@ function renderImportReviewPage() {
         ${icon('chevron-left', 16)} Chọn phương thức khác
       </button>
 
+      ${headerHtml}
+
       <div style="background:var(--white); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-sm); margin-top:var(--space-md);">
         <div id="review-list"></div>
       </div>
 
+      ${summaryHtml}
+
       <div class="form-group mt-lg">
         <label class="form-label" for="supplier-input">Người bàn giao (tuỳ chọn)</label>
-        <input class="form-input" type="text" id="supplier-input" placeholder="Tên bộ phận thu mua / nhà cung cấp">
+        <input class="form-input" type="text" id="supplier-input" placeholder="Tên bộ phận thu mua / nhà cung cấp" value="${h && h.vendor_name ? escapeHtml(h.vendor_name) : ''}">
       </div>
       <button class="btn btn--primary btn--full btn--lg" id="btn-confirm" onclick="confirmImport()">
         ${icon('check', 18)} Xác Nhận Nhập Kho
@@ -280,21 +321,36 @@ function startCameraInput() {
 async function processOcrImage(dataUrl) {
   const content = document.getElementById('content');
 
-  // Show full processing page
   content.innerHTML = `
     <div style="padding: var(--space-xl) var(--space-lg);">
       <img src="${dataUrl}" class="camera-preview" style="width:100%; margin-bottom:var(--space-lg); border-radius:var(--radius-lg);">
       <div class="ocr-processing">
         <div style="color:var(--orange);">${icon('scan', 44)}</div>
         <div class="spinner" style="margin:0 auto;"></div>
-        <p class="text-muted text-sm text-center">Đang phân tích ảnh hoá đơn...<br>Vui lòng đợi trong giây lát</p>
+        <p class="text-muted text-sm text-center">Đang phân tích phiếu nhập kho...<br>Vui lòng đợi trong giây lát</p>
       </div>
     </div>
   `;
 
   try {
     const result = await api.post('/api/ocr/image', { image_base64: dataUrl });
-    state.reviewItems = result.items || [];
+
+    // New response format: {header, items, summary}
+    state.receiptHeader = result.header || null;
+    state.receiptSummary = result.summary || null;
+    state.reviewItems = (result.items || []).map(item => ({
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      material_id: item.material_id,
+      item_code: item.item_code || null,
+      unit_price: item.unit_price || null,
+      amount: item.amount || null,
+      location: item.location || null,
+      acc_no: item.acc_no || null,
+      is_new: item.is_new || false,
+    }));
+
     if (state.currentTab !== 'import') return;
     if (state.reviewItems.length === 0) {
       showToast('Không nhận diện được. Thử nhập thủ công.', 'error');
@@ -539,7 +595,6 @@ function updateReviewList() {
   const listEl = document.getElementById('review-list');
   if (!listEl) return;
 
-  // Update subtitle count
   const subtitle = document.getElementById('page-subtitle');
   if (subtitle && state.currentTab === 'import') {
     subtitle.textContent = state.reviewItems.length > 0 ? `${state.reviewItems.length} mặt hàng` : '';
@@ -550,23 +605,39 @@ function updateReviewList() {
     return;
   }
 
-  listEl.innerHTML = state.reviewItems.map((item, idx) => `
-    <div class="review-item">
-      <div class="review-item__num">${idx + 1}</div>
-      <div style="flex:1; min-width:0;">
-        <div class="review-item__name ${item.material_id ? '' : 'review-item__unmatched'}">
-          ${escapeHtml(item.name)}${item.material_id ? '' : ` ${iconInline('alert-triangle', 13, 'var(--warning)')}`}
+  listEl.innerHTML = state.reviewItems.map((item, idx) => {
+    const badge = item.is_new
+      ? `<span class="badge badge--new">Mới</span>`
+      : (!item.material_id ? ` ${iconInline('alert-triangle', 13, 'var(--warning)')}` : '');
+    const priceInfo = item.unit_price != null
+      ? `<span class="text-xs text-muted">${Number(item.unit_price).toLocaleString('vi-VN')} đ/${item.unit}</span>`
+      : '';
+    const amountInfo = item.amount != null
+      ? `<span class="text-xs" style="color:var(--orange);font-weight:600;">${Number(item.amount).toLocaleString('vi-VN')} đ</span>`
+      : '';
+
+    return `
+      <div class="review-item">
+        <div class="review-item__num">${idx + 1}</div>
+        <div style="flex:1; min-width:0;">
+          <div class="review-item__name">
+            ${escapeHtml(item.name)} ${badge}
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            ${item.item_code ? `<span class="text-xs text-muted">Mã: ${escapeHtml(item.item_code)}</span>` : ''}
+            ${priceInfo}
+            ${amountInfo}
+          </div>
         </div>
-        <div class="text-xs text-muted">${item.material_id ? '' : 'Chưa khớp danh mục · '}</div>
+        <div class="stepper">
+          <button class="stepper__btn" onclick="changeItemQty(${idx}, -0.5)">−</button>
+          <span class="stepper__value">${parseFloat(item.quantity).toFixed(item.quantity % 1 === 0 ? 0 : 1)} ${item.unit}</span>
+          <button class="stepper__btn" onclick="changeItemQty(${idx}, 0.5)">+</button>
+        </div>
+        <button class="review-item__delete" onclick="removeReviewItem(${idx})">${icon('x', 14)}</button>
       </div>
-      <div class="stepper">
-        <button class="stepper__btn" onclick="changeItemQty(${idx}, -0.5)">−</button>
-        <span class="stepper__value">${parseFloat(item.quantity).toFixed(item.quantity % 1 === 0 ? 0 : 1)} ${item.unit}</span>
-        <button class="stepper__btn" onclick="changeItemQty(${idx}, 0.5)">+</button>
-      </div>
-      <button class="review-item__delete" onclick="removeReviewItem(${idx})">${icon('x', 14)}</button>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function changeItemQty(idx, delta) {
@@ -585,16 +656,10 @@ function removeReviewItem(idx) {
 async function confirmImport() {
   if (state.reviewItems.length === 0) { showToast('Chưa có nguyên vật liệu', 'error'); return; }
 
-  const unmatchedItems = state.reviewItems.filter(i => !i.material_id);
-  if (unmatchedItems.length > 0) {
-    const names = unmatchedItems.map(i => i.name).join(', ');
-    showToast(`Một số mặt hàng chưa khớp danh mục: ${names}. Bỏ qua và tiếp tục?`, 'error');
-    // Proceed anyway after 2s or user can edit
-  }
-
+  // All items should have material_id now (auto-created by backend)
   const validItems = state.reviewItems.filter(i => i.material_id);
   if (validItems.length === 0) {
-    showToast('Không có mặt hàng nào khớp với danh mục', 'error');
+    showToast('Không có mặt hàng nào hợp lệ', 'error');
     return;
   }
 
@@ -602,18 +667,40 @@ async function confirmImport() {
   if (btn) { btn.disabled = true; btn.innerHTML = `<div class="spinner spinner--sm spinner--white"></div> Đang lưu...`; }
 
   const supplier = document.getElementById('supplier-input')?.value || '';
+  const h = state.receiptHeader;
 
   try {
     await api.post('/api/imports', {
       supplier_name: supplier || null,
       created_by: 'Nhân viên kho',
-      items: validItems.map(i => ({ material_id: i.material_id, quantity: i.quantity, unit: i.unit })),
+      // Header fields from OCR
+      receipt_date: h?.receipt_date || null,
+      description: h?.description || null,
+      vendor_name: h?.vendor_name || null,
+      period: h?.period || null,
+      voucher_no: h?.voucher_no || null,
+      invoice_serial: h?.invoice_serial || null,
+      invoice_no: h?.invoice_no || null,
+      // Items with full details
+      items: validItems.map(i => ({
+        material_id: i.material_id,
+        quantity: i.quantity,
+        unit: i.unit,
+        item_code: i.item_code || null,
+        item_name: i.name || null,
+        unit_price: i.unit_price || null,
+        amount: i.amount || null,
+        location: i.location || null,
+        acc_no: i.acc_no || null,
+      })),
     });
 
     showToast(`Nhập kho thành công ${validItems.length} mặt hàng!`, 'success');
 
     // Reset
     state.reviewItems = [];
+    state.receiptHeader = null;
+    state.receiptSummary = null;
     renderImportTab();
   } catch (err) {
     showToast('Lỗi: ' + err.message, 'error');
