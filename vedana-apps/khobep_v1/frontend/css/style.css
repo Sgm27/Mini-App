@@ -470,3 +470,91 @@ ul, ol { list-style: none; }
   transition: color 0.15s;
 }
 .back-link:active { color: var(--orange); }
+
+/* ─── Receipt Header Card ──────────────────────── */
+.receipt-header-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-top: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid var(--orange);
+}
+
+.receipt-header-card__title {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.receipt-header-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm) var(--space-md);
+}
+
+.receipt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.receipt-field--wide {
+  grid-column: 1 / -1;
+}
+
+.receipt-field__label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.receipt-field__value {
+  font-size: var(--text-sm);
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* ─── Receipt Summary Card ─────────────────────── */
+.receipt-summary-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  margin-top: var(--space-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.receipt-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-xs) 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.receipt-summary-row--total {
+  border-top: 1px solid var(--border);
+  margin-top: var(--space-xs);
+  padding-top: var(--space-sm);
+  font-weight: 700;
+  color: var(--text);
+  font-size: var(--text-base);
+}
+
+/* ─── New Badge ────────────────────────────────── */
+.badge--new {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: #DBEAFE;
+  color: #2563EB;
+  vertical-align: middle;
+  margin-left: 4px;
+}
