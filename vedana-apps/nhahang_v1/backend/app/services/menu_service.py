@@ -2,26 +2,26 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
-from app.models.nha_hang import CongThucMon, DanhMucMon, MonAn, NguyenLieu
+from app.models.nha_hang import Recipe, DishCategory, Dish, Ingredient
 from app.schemas.nha_hang import (
     CheckAvailabilityResponse,
-    DanhMucMonOut,
-    MonAnAvailability,
-    MonAnOut,
-    ThieuNguyenLieu,
+    CategoryOut,
+    DishAvailability,
+    DishOut,
+    MissingIngredient,
 )
 
 
-def get_categories(db: Session) -> List[DanhMucMonOut]:
-    rows = db.query(DanhMucMon).order_by(DanhMucMon.thu_tu).all()
-    return [DanhMucMonOut.model_validate(r) for r in rows]
+def get_categories(db: Session) -> List[CategoryOut]:
+    rows = db.query(DishCategory).order_by(DishCategory.sort_order).all()
+    return [CategoryOut.model_validate(r) for r in rows]
 
 
-def _check_single_dish(db: Session, mon_an_id: int) -> tuple[bool, List[str]]:
+def _check_single_dish(db: Session, dish_id: int) -> tuple[bool, List[str]]:
     """Check if 1 serving of a dish can be made given current stock."""
     recipes = (
-        db.query(CongThucMon)
-        .filter(CongThucMon.mon_an_id == mon_an_id)
+        db.query(Recipe)
+        .filter(Recipe.dish_id == dish_id)
         .all()
     )
     if not recipes:
@@ -29,35 +29,35 @@ def _check_single_dish(db: Session, mon_an_id: int) -> tuple[bool, List[str]]:
 
     missing = []
     for r in recipes:
-        ng = db.query(NguyenLieu).filter(NguyenLieu.id == r.nguyen_lieu_id).first()
-        if ng and float(ng.so_luong_ton) < float(r.so_luong_can):
-            missing.append(ng.ten_nguyen_lieu)
+        ing = db.query(Ingredient).filter(Ingredient.id == r.ingredient_id).first()
+        if ing and float(ing.stock_quantity) < float(r.required_quantity):
+            missing.append(ing.name)
     return len(missing) == 0, missing
 
 
-def get_dishes(db: Session, danh_muc_id: int | None = None) -> List[MonAnOut]:
-    q = db.query(MonAn).filter(MonAn.active == True)
-    if danh_muc_id:
-        q = q.filter(MonAn.danh_muc_id == danh_muc_id)
-    q = q.join(DanhMucMon).order_by(DanhMucMon.thu_tu, MonAn.id)
+def get_dishes(db: Session, category_id: int | None = None) -> List[DishOut]:
+    q = db.query(Dish).filter(Dish.active == True)
+    if category_id:
+        q = q.filter(Dish.category_id == category_id)
+    q = q.join(DishCategory).order_by(DishCategory.sort_order, Dish.id)
     dishes = q.all()
 
     result = []
     for d in dishes:
-        co_the, missing = _check_single_dish(db, d.id)
+        can_serve, missing = _check_single_dish(db, d.id)
         result.append(
-            MonAnOut(
+            DishOut(
                 id=d.id,
-                ten_mon=d.ten_mon,
-                gia=float(d.gia),
-                hinh_anh=d.hinh_anh,
-                mo_ta=d.mo_ta,
-                danh_muc_id=d.danh_muc_id,
-                danh_muc_ten=d.danh_muc.ten_danh_muc if d.danh_muc else None,
-                danh_muc_icon=d.danh_muc.icon if d.danh_muc else None,
+                name=d.name,
+                price=float(d.price),
+                image=d.image,
+                description=d.description,
+                category_id=d.category_id,
+                category_name=d.category.name if d.category else None,
+                category_icon=d.category.icon if d.category else None,
                 active=d.active,
-                co_the_phuc_vu=co_the,
-                thieu_nguyen_lieu=missing,
+                can_serve=can_serve,
+                missing_ingredients=missing,
             )
         )
     return result
@@ -75,52 +75,52 @@ def check_cart_availability(
     dish_ingredient_map: dict[int, list[int]] = {}
 
     for item in items:
-        dish_id = item.mon_an_id
-        qty = item.so_luong
+        d_id = item.dish_id
+        qty = item.quantity
         recipes = (
-            db.query(CongThucMon)
-            .filter(CongThucMon.mon_an_id == dish_id)
+            db.query(Recipe)
+            .filter(Recipe.dish_id == d_id)
             .all()
         )
-        dish_ingredient_map[dish_id] = [r.nguyen_lieu_id for r in recipes]
+        dish_ingredient_map[d_id] = [r.ingredient_id for r in recipes]
         for r in recipes:
-            ingredient_needs[r.nguyen_lieu_id] = (
-                ingredient_needs.get(r.nguyen_lieu_id, 0.0)
-                + float(r.so_luong_can) * qty
+            ingredient_needs[r.ingredient_id] = (
+                ingredient_needs.get(r.ingredient_id, 0.0)
+                + float(r.required_quantity) * qty
             )
 
     # Compare against current stock
-    insufficient: dict[int, ThieuNguyenLieu] = {}
-    for ng_id, needed in ingredient_needs.items():
-        ng = db.query(NguyenLieu).filter(NguyenLieu.id == ng_id).first()
-        if ng and float(ng.so_luong_ton) < needed:
-            insufficient[ng_id] = ThieuNguyenLieu(
-                id=ng.id,
-                ten=ng.ten_nguyen_lieu,
-                don_vi=ng.don_vi,
-                ton_kho=float(ng.so_luong_ton),
-                can_them=round(needed - float(ng.so_luong_ton), 3),
+    insufficient: dict[int, MissingIngredient] = {}
+    for ing_id, needed in ingredient_needs.items():
+        ing = db.query(Ingredient).filter(Ingredient.id == ing_id).first()
+        if ing and float(ing.stock_quantity) < needed:
+            insufficient[ing_id] = MissingIngredient(
+                id=ing.id,
+                name=ing.name,
+                unit=ing.unit,
+                in_stock=float(ing.stock_quantity),
+                needed=round(needed - float(ing.stock_quantity), 3),
             )
 
     # Per-dish status
-    mon_an_results: list[MonAnAvailability] = []
+    dish_results: list[DishAvailability] = []
     for item in items:
-        dish_id = item.mon_an_id
+        d_id = item.dish_id
         missing_names = [
-            insufficient[ng_id].ten
-            for ng_id in dish_ingredient_map.get(dish_id, [])
-            if ng_id in insufficient
+            insufficient[ing_id].name
+            for ing_id in dish_ingredient_map.get(d_id, [])
+            if ing_id in insufficient
         ]
-        mon_an_results.append(
-            MonAnAvailability(
-                mon_an_id=dish_id,
-                co_the_phuc_vu=len(missing_names) == 0,
-                thieu_nguyen_lieu=missing_names,
+        dish_results.append(
+            DishAvailability(
+                dish_id=d_id,
+                can_serve=len(missing_names) == 0,
+                missing_ingredients=missing_names,
             )
         )
 
     return CheckAvailabilityResponse(
-        co_the_phuc_vu_tat_ca=len(insufficient) == 0,
-        thieu_nguyen_lieu=list(insufficient.values()),
-        mon_an=mon_an_results,
+        can_serve_all=len(insufficient) == 0,
+        missing_ingredients=list(insufficient.values()),
+        dishes=dish_results,
     )

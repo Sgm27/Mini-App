@@ -7,25 +7,25 @@ from app.api.deps import get_db
 from app.schemas.nha_hang import (
     CheckAvailabilityRequest,
     CheckAvailabilityResponse,
-    DanhMucMonOut,
-    MonAnOut,
+    CategoryOut,
+    DishOut,
 )
 from app.services import menu_service
 
 router = APIRouter(prefix="/menu", tags=["menu"])
 
 
-@router.get("/categories", response_model=List[DanhMucMonOut])
+@router.get("/categories", response_model=List[CategoryOut])
 def list_categories(db: Session = Depends(get_db)):
     return menu_service.get_categories(db)
 
 
-@router.get("/dishes", response_model=List[MonAnOut])
+@router.get("/dishes", response_model=List[DishOut])
 def list_dishes(
-    danh_muc_id: Optional[int] = None,
+    category_id: Optional[int] = None,
     db: Session = Depends(get_db),
 ):
-    return menu_service.get_dishes(db, danh_muc_id)
+    return menu_service.get_dishes(db, category_id)
 
 
 @router.post("/check-availability", response_model=CheckAvailabilityResponse)

@@ -15,7 +15,8 @@
  *   const { file_url } = await api.uploadForm('/api/upload', formData);
  */
 
-const API_URL = 'https://sxpe4eduygehnwvmcxn5gaqp2m0hfyxr.lambda-url.ap-southeast-1.on.aws';
+// const API_URL = 'https://sxpe4eduygehnwvmcxn5gaqp2m0hfyxr.lambda-url.ap-southeast-1.on.aws';
+const API_URL = 'http://localhost:2701';
 
 /**
  * Process response: check status and parse JSON

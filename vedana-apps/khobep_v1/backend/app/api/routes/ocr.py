@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.models.kitchen import NguyenLieu
+from app.models.kitchen import Ingredient
 from app.schemas.kitchen import ExtractResponse, OcrExtractRequest, VoiceExtractRequest
 from app.services.ocr_service import extract_from_image, extract_from_voice
 
@@ -11,21 +11,21 @@ router = APIRouter(prefix="/ocr")
 
 def _match_materials(items, db: Session):
     """Try to match extracted item names to known ingredients."""
-    all_mats = db.query(NguyenLieu).all()
-    mat_map = {m.ten_nguyen_lieu.lower(): m for m in all_mats}
+    all_mats = db.query(Ingredient).all()
+    mat_map = {m.name.lower(): m for m in all_mats}
 
     for item in items:
         name_lower = item.name.lower()
         # Exact match
         if name_lower in mat_map:
             item.material_id = mat_map[name_lower].id
-            item.unit = mat_map[name_lower].don_vi
+            item.unit = mat_map[name_lower].unit
             continue
         # Partial match
         for mat_name, mat in mat_map.items():
             if name_lower in mat_name or mat_name in name_lower:
                 item.material_id = mat.id
-                item.unit = mat.don_vi
+                item.unit = mat.unit
                 break
     return items
 

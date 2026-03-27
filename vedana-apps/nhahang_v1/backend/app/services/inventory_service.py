@@ -2,67 +2,67 @@ from typing import List
 
 from sqlalchemy.orm import Session
 
-from app.models.nha_hang import NguyenLieu
-from app.schemas.nha_hang import NguyenLieuCreate, NguyenLieuOut, NguyenLieuUpdate
+from app.models.nha_hang import Ingredient
+from app.schemas.nha_hang import IngredientCreate, IngredientOut, IngredientUpdate
 
 
-def get_all_ingredients(db: Session) -> List[NguyenLieuOut]:
-    rows = db.query(NguyenLieu).order_by(NguyenLieu.id).all()
+def get_all_ingredients(db: Session) -> List[IngredientOut]:
+    rows = db.query(Ingredient).order_by(Ingredient.id).all()
     result = []
     for r in rows:
-        ton = float(r.so_luong_ton)
-        bao = float(r.nguong_canh_bao)
+        stock = float(r.stock_quantity)
+        threshold = float(r.warning_threshold)
         result.append(
-            NguyenLieuOut(
+            IngredientOut(
                 id=r.id,
-                ten_nguyen_lieu=r.ten_nguyen_lieu,
-                don_vi=r.don_vi,
-                so_luong_ton=ton,
-                nguong_canh_bao=bao,
-                canh_bao_thap=(bao > 0 and ton <= bao),
+                name=r.name,
+                unit=r.unit,
+                stock_quantity=stock,
+                warning_threshold=threshold,
+                low_stock_warning=(threshold > 0 and stock <= threshold),
             )
         )
     return result
 
 
-def update_ingredient(db: Session, ingredient_id: int, data: NguyenLieuUpdate) -> NguyenLieuOut:
-    ng = db.query(NguyenLieu).filter(NguyenLieu.id == ingredient_id).first()
-    if not ng:
+def update_ingredient(db: Session, ingredient_id: int, data: IngredientUpdate) -> IngredientOut:
+    ing = db.query(Ingredient).filter(Ingredient.id == ingredient_id).first()
+    if not ing:
         return None
-    ng.so_luong_ton = data.so_luong_ton
-    if data.nguong_canh_bao is not None:
-        ng.nguong_canh_bao = data.nguong_canh_bao
+    ing.stock_quantity = data.stock_quantity
+    if data.warning_threshold is not None:
+        ing.warning_threshold = data.warning_threshold
     db.commit()
-    db.refresh(ng)
-    ton = float(ng.so_luong_ton)
-    bao = float(ng.nguong_canh_bao)
-    return NguyenLieuOut(
-        id=ng.id,
-        ten_nguyen_lieu=ng.ten_nguyen_lieu,
-        don_vi=ng.don_vi,
-        so_luong_ton=ton,
-        nguong_canh_bao=bao,
-        canh_bao_thap=(bao > 0 and ton <= bao),
+    db.refresh(ing)
+    stock = float(ing.stock_quantity)
+    threshold = float(ing.warning_threshold)
+    return IngredientOut(
+        id=ing.id,
+        name=ing.name,
+        unit=ing.unit,
+        stock_quantity=stock,
+        warning_threshold=threshold,
+        low_stock_warning=(threshold > 0 and stock <= threshold),
     )
 
 
-def create_ingredient(db: Session, data: NguyenLieuCreate) -> NguyenLieuOut:
-    ng = NguyenLieu(
-        ten_nguyen_lieu=data.ten_nguyen_lieu,
-        don_vi=data.don_vi,
-        so_luong_ton=data.so_luong_ton,
-        nguong_canh_bao=data.nguong_canh_bao,
+def create_ingredient(db: Session, data: IngredientCreate) -> IngredientOut:
+    ing = Ingredient(
+        name=data.name,
+        unit=data.unit,
+        stock_quantity=data.stock_quantity,
+        warning_threshold=data.warning_threshold,
     )
-    db.add(ng)
+    db.add(ing)
     db.commit()
-    db.refresh(ng)
-    ton = float(ng.so_luong_ton)
-    bao = float(ng.nguong_canh_bao)
-    return NguyenLieuOut(
-        id=ng.id,
-        ten_nguyen_lieu=ng.ten_nguyen_lieu,
-        don_vi=ng.don_vi,
-        so_luong_ton=ton,
-        nguong_canh_bao=bao,
-        canh_bao_thap=(bao > 0 and ton <= bao),
+    db.refresh(ing)
+    stock = float(ing.stock_quantity)
+    threshold = float(ing.warning_threshold)
+    return IngredientOut(
+        id=ing.id,
+        name=ing.name,
+        unit=ing.unit,
+        stock_quantity=stock,
+        warning_threshold=threshold,
+        low_stock_warning=(threshold > 0 and stock <= threshold),
     )

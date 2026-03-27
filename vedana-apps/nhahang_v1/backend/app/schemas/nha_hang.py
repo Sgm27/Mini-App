@@ -5,10 +5,10 @@ from pydantic import BaseModel
 
 # ── Category ──────────────────────────────────────────────────────────────────
 
-class DanhMucMonOut(BaseModel):
+class CategoryOut(BaseModel):
     id: int
-    ten_danh_muc: str
-    thu_tu: int
+    name: str
+    sort_order: int
     icon: Optional[str] = None
 
     model_config = {"from_attributes": True}
@@ -16,18 +16,18 @@ class DanhMucMonOut(BaseModel):
 
 # ── Dish ──────────────────────────────────────────────────────────────────────
 
-class MonAnOut(BaseModel):
+class DishOut(BaseModel):
     id: int
-    ten_mon: str
-    gia: float
-    hinh_anh: Optional[str] = None
-    mo_ta: Optional[str] = None
-    danh_muc_id: int
-    danh_muc_ten: Optional[str] = None
-    danh_muc_icon: Optional[str] = None
+    name: str
+    price: float
+    image: Optional[str] = None
+    description: Optional[str] = None
+    category_id: int
+    category_name: Optional[str] = None
+    category_icon: Optional[str] = None
     active: bool
-    co_the_phuc_vu: bool = True
-    thieu_nguyen_lieu: List[str] = []
+    can_serve: bool = True
+    missing_ingredients: List[str] = []
 
     model_config = {"from_attributes": True}
 
@@ -35,22 +35,22 @@ class MonAnOut(BaseModel):
 # ── Availability check ────────────────────────────────────────────────────────
 
 class CartItem(BaseModel):
-    mon_an_id: int
-    so_luong: int
+    dish_id: int
+    quantity: int
 
 
-class MonAnAvailability(BaseModel):
-    mon_an_id: int
-    co_the_phuc_vu: bool
-    thieu_nguyen_lieu: List[str] = []
+class DishAvailability(BaseModel):
+    dish_id: int
+    can_serve: bool
+    missing_ingredients: List[str] = []
 
 
-class ThieuNguyenLieu(BaseModel):
+class MissingIngredient(BaseModel):
     id: int
-    ten: str
-    don_vi: str
-    ton_kho: float
-    can_them: float
+    name: str
+    unit: str
+    in_stock: float
+    needed: float
 
 
 class CheckAvailabilityRequest(BaseModel):
@@ -58,61 +58,61 @@ class CheckAvailabilityRequest(BaseModel):
 
 
 class CheckAvailabilityResponse(BaseModel):
-    co_the_phuc_vu_tat_ca: bool
-    thieu_nguyen_lieu: List[ThieuNguyenLieu] = []
-    mon_an: List[MonAnAvailability] = []
+    can_serve_all: bool
+    missing_ingredients: List[MissingIngredient] = []
+    dishes: List[DishAvailability] = []
 
 
 # ── Ingredient / Inventory ────────────────────────────────────────────────────
 
-class NguyenLieuOut(BaseModel):
+class IngredientOut(BaseModel):
     id: int
-    ten_nguyen_lieu: str
-    don_vi: str
-    so_luong_ton: float
-    nguong_canh_bao: float
-    canh_bao_thap: bool = False
+    name: str
+    unit: str
+    stock_quantity: float
+    warning_threshold: float
+    low_stock_warning: bool = False
 
     model_config = {"from_attributes": True}
 
 
-class NguyenLieuUpdate(BaseModel):
-    so_luong_ton: float
-    nguong_canh_bao: Optional[float] = None
+class IngredientUpdate(BaseModel):
+    stock_quantity: float
+    warning_threshold: Optional[float] = None
 
 
-class NguyenLieuCreate(BaseModel):
-    ten_nguyen_lieu: str
-    don_vi: str
-    so_luong_ton: float = 0
-    nguong_canh_bao: float = 0
+class IngredientCreate(BaseModel):
+    name: str
+    unit: str
+    stock_quantity: float = 0
+    warning_threshold: float = 0
 
 
 # ── Order ─────────────────────────────────────────────────────────────────────
 
 class CreateOrderRequest(BaseModel):
-    ma_ban: Optional[str] = None
+    table_number: Optional[str] = None
     items: List[CartItem]
-    ghi_chu: Optional[str] = None
+    notes: Optional[str] = None
 
 
-class ChiTietDonHangOut(BaseModel):
-    mon_an_id: int
-    ten_mon: str
-    so_luong: int
-    don_gia: float
-    thanh_tien: float
+class OrderItemOut(BaseModel):
+    dish_id: int
+    name: str
+    quantity: int
+    unit_price: float
+    subtotal: float
 
     model_config = {"from_attributes": True}
 
 
-class DonHangOut(BaseModel):
+class OrderOut(BaseModel):
     id: int
-    ma_ban: Optional[str] = None
-    trang_thai: str
-    tong_tien: float
-    ghi_chu: Optional[str] = None
-    chi_tiet: List[ChiTietDonHangOut] = []
+    table_number: Optional[str] = None
+    status: str
+    total_amount: float
+    notes: Optional[str] = None
+    items: List[OrderItemOut] = []
     created_at: str
 
     model_config = {"from_attributes": True}

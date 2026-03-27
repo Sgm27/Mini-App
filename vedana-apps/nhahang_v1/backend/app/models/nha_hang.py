@@ -17,87 +17,87 @@ from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 
 
-class DanhMucMon(Base):
-    __tablename__ = "danh_muc_mon"
+class DishCategory(Base):
+    __tablename__ = "dish_categories"
 
     id = Column(Integer, primary_key=True, index=True)
-    ten_danh_muc = Column(String(100), nullable=False)
-    thu_tu = Column(Integer, default=0)
+    name = Column(String(100), nullable=False)
+    sort_order = Column(Integer, default=0)
     icon = Column(String(50), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    mon_an = relationship("MonAn", back_populates="danh_muc")
+    dishes = relationship("Dish", back_populates="category")
 
 
-class MonAn(Base):
-    __tablename__ = "mon_an"
+class Dish(Base):
+    __tablename__ = "dishes"
 
     id = Column(Integer, primary_key=True, index=True)
-    ten_mon = Column(String(200), nullable=False)
-    gia = Column(Numeric(10, 0), nullable=False)
-    hinh_anh = Column(String(500), nullable=True)
-    mo_ta = Column(Text, nullable=True)
-    danh_muc_id = Column(Integer, ForeignKey("danh_muc_mon.id"), nullable=False)
+    name = Column(String(200), nullable=False)
+    price = Column(Numeric(10, 0), nullable=False)
+    image = Column(String(500), nullable=True)
+    description = Column(Text, nullable=True)
+    category_id = Column(Integer, ForeignKey("dish_categories.id"), nullable=False)
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    danh_muc = relationship("DanhMucMon", back_populates="mon_an")
-    cong_thuc = relationship("CongThucMon", back_populates="mon_an")
-    chi_tiet_don_hang = relationship("ChiTietDonHang", back_populates="mon_an")
+    category = relationship("DishCategory", back_populates="dishes")
+    recipes = relationship("Recipe", back_populates="dish")
+    order_items = relationship("OrderItem", back_populates="dish")
 
 
-class NguyenLieu(Base):
-    __tablename__ = "nguyen_lieu"
+class Ingredient(Base):
+    __tablename__ = "ingredients"
 
     id = Column(Integer, primary_key=True, index=True)
-    ten_nguyen_lieu = Column(String(200), nullable=False)
-    don_vi = Column(String(50), nullable=False)
-    so_luong_ton = Column(Numeric(10, 3), default=0)
-    nguong_canh_bao = Column(Numeric(10, 3), default=0)
+    name = Column(String(200), nullable=False)
+    unit = Column(String(50), nullable=False)
+    stock_quantity = Column(Numeric(10, 3), default=0)
+    warning_threshold = Column(Numeric(10, 3), default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    cong_thuc = relationship("CongThucMon", back_populates="nguyen_lieu")
+    recipes = relationship("Recipe", back_populates="ingredient")
 
 
-class CongThucMon(Base):
-    __tablename__ = "cong_thuc_mon"
-
-    id = Column(Integer, primary_key=True, index=True)
-    mon_an_id = Column(Integer, ForeignKey("mon_an.id"), nullable=False)
-    nguyen_lieu_id = Column(Integer, ForeignKey("nguyen_lieu.id"), nullable=False)
-    so_luong_can = Column(Numeric(10, 3), nullable=False)
-
-    __table_args__ = (UniqueConstraint("mon_an_id", "nguyen_lieu_id", name="uq_mon_nguyen_lieu"),)
-
-    mon_an = relationship("MonAn", back_populates="cong_thuc")
-    nguyen_lieu = relationship("NguyenLieu", back_populates="cong_thuc")
-
-
-class DonHang(Base):
-    __tablename__ = "don_hang"
+class Recipe(Base):
+    __tablename__ = "recipes"
 
     id = Column(Integer, primary_key=True, index=True)
-    ma_ban = Column(String(50), nullable=True)
-    trang_thai = Column(
-        Enum("cho_xac_nhan", "da_xac_nhan", "da_huy"), default="cho_xac_nhan"
+    dish_id = Column(Integer, ForeignKey("dishes.id"), nullable=False)
+    ingredient_id = Column(Integer, ForeignKey("ingredients.id"), nullable=False)
+    required_quantity = Column(Numeric(10, 3), nullable=False)
+
+    __table_args__ = (UniqueConstraint("dish_id", "ingredient_id", name="uq_dish_ingredient"),)
+
+    dish = relationship("Dish", back_populates="recipes")
+    ingredient = relationship("Ingredient", back_populates="recipes")
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    table_number = Column(String(50), nullable=True)
+    status = Column(
+        Enum("pending", "confirmed", "cancelled"), default="pending"
     )
-    tong_tien = Column(Numeric(10, 0), default=0)
-    ghi_chu = Column(Text, nullable=True)
+    total_amount = Column(Numeric(10, 0), default=0)
+    notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    chi_tiet = relationship("ChiTietDonHang", back_populates="don_hang")
+    items = relationship("OrderItem", back_populates="order")
 
 
-class ChiTietDonHang(Base):
-    __tablename__ = "chi_tiet_don_hang"
+class OrderItem(Base):
+    __tablename__ = "order_items"
 
     id = Column(Integer, primary_key=True, index=True)
-    don_hang_id = Column(Integer, ForeignKey("don_hang.id"), nullable=False)
-    mon_an_id = Column(Integer, ForeignKey("mon_an.id"), nullable=False)
-    so_luong = Column(Integer, nullable=False, default=1)
-    don_gia = Column(Numeric(10, 0), nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
+    dish_id = Column(Integer, ForeignKey("dishes.id"), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    unit_price = Column(Numeric(10, 0), nullable=False)
 
-    don_hang = relationship("DonHang", back_populates="chi_tiet")
-    mon_an = relationship("MonAn", back_populates="chi_tiet_don_hang")
+    order = relationship("Order", back_populates="items")
+    dish = relationship("Dish", back_populates="order_items")

@@ -9,7 +9,7 @@ const state = {
     dishes: [],               // all dishes from server
     categories: [],           // all categories
     currentCategory: 0,       // 0 = all
-    availabilityMap: new Map(),// dish_id → { co_the_phuc_vu, thieu_nguyen_lieu }
+    availabilityMap: new Map(),// dish_id → { can_serve, missing_ingredients }
     checkTimer: null,
     checking: false,
     selectedTable: null,
@@ -82,7 +82,7 @@ function cartTotal() {
     let total = 0;
     for (const [id, qty] of state.cart.entries()) {
         const d = state.dishes.find(x => x.id === id);
-        if (d) total += d.gia * qty;
+        if (d) total += d.price * qty;
     }
     return total;
 }
@@ -177,8 +177,8 @@ async function loadMenuTab() {
         state.availabilityMap.clear();
         dishes.forEach(d => {
             state.availabilityMap.set(d.id, {
-                co_the_phuc_vu: d.co_the_phuc_vu,
-                thieu_nguyen_lieu: d.thieu_nguyen_lieu,
+                can_serve: d.can_serve,
+                missing_ingredients: d.missing_ingredients,
             });
         });
 
@@ -193,7 +193,7 @@ function renderMenuTab(c) {
     if (!c) c = getContent();
     const filtered = state.currentCategory === 0
         ? state.dishes
-        : state.dishes.filter(d => d.danh_muc_id === state.currentCategory);
+        : state.dishes.filter(d => d.category_id === state.currentCategory);
 
     const cartHasItems = state.cart.size > 0;
 
@@ -217,7 +217,7 @@ function renderCategoryBar() {
         const active = state.currentCategory === cat.id ? 'category-pill--active' : '';
         return `<button class="category-pill ${active}" data-cat="${cat.id}">
                     <span class="category-pill__icon">${cat.icon || ''}</span>
-                    ${escapeHtml(cat.ten_danh_muc)}
+                    ${escapeHtml(cat.name)}
                 </button>`;
     }).join('');
 
@@ -250,13 +250,13 @@ function renderDishGroups(dishes) {
     // Group by category
     const grouped = {};
     dishes.forEach(d => {
-        if (!grouped[d.danh_muc_id]) grouped[d.danh_muc_id] = { cat: d, items: [] };
-        grouped[d.danh_muc_id].items.push(d);
+        if (!grouped[d.category_id]) grouped[d.category_id] = { cat: d, items: [] };
+        grouped[d.category_id].items.push(d);
     });
 
     return Object.values(grouped).map(g => `
         <div class="dish-section__title">
-            ${g.cat.danh_muc_icon || ''} ${escapeHtml(g.cat.danh_muc_ten || '')}
+            ${g.cat.category_icon || ''} ${escapeHtml(g.cat.category_name || '')}
         </div>
         ${g.items.map(d => renderDishCard(d)).join('')}
     `).join('');
@@ -264,9 +264,9 @@ function renderDishGroups(dishes) {
 
 function renderDishCard(dish) {
     const qty = state.cart.get(dish.id) || 0;
-    const avail = state.availabilityMap.get(dish.id) || { co_the_phuc_vu: true, thieu_nguyen_lieu: [] };
+    const avail = state.availabilityMap.get(dish.id) || { can_serve: true, missing_ingredients: [] };
     const inCart = qty > 0;
-    const unavailable = !avail.co_the_phuc_vu;
+    const unavailable = !avail.can_serve;
 
     const cardCls = [
         'dish-card',
@@ -282,16 +282,16 @@ function renderDishCard(dish) {
                <span class="dish-status__dot"></span>Có thể phục vụ
            </span>`;
 
-    const imgHtml = dish.hinh_anh
-        ? `<img src="${API_URL}${escapeHtml(dish.hinh_anh)}" alt="${escapeHtml(dish.ten_mon)}" loading="lazy" />`
-        : catEmoji(dish.danh_muc_id);
+    const imgHtml = dish.image
+        ? `<img src="${API_URL}${escapeHtml(dish.image)}" alt="${escapeHtml(dish.name)}" loading="lazy" />`
+        : catEmoji(dish.category_id);
 
     return `
         <div class="${cardCls}" data-dish="${dish.id}">
-            <div class="dish-avatar ${avatarClass(dish.danh_muc_id)}">${imgHtml}</div>
+            <div class="dish-avatar ${avatarClass(dish.category_id)}">${imgHtml}</div>
             <div class="dish-info">
-                <div class="dish-name">${escapeHtml(dish.ten_mon)}</div>
-                <div class="dish-price">${formatPrice(dish.gia)}</div>
+                <div class="dish-name">${escapeHtml(dish.name)}</div>
+                <div class="dish-price">${formatPrice(dish.price)}</div>
                 ${statusHtml}
             </div>
             <div class="qty-controls">
@@ -388,8 +388,8 @@ async function runAvailabilityCheck() {
         // Reset to server-provided per-dish availability
         state.dishes.forEach(d => {
             state.availabilityMap.set(d.id, {
-                co_the_phuc_vu: d.co_the_phuc_vu,
-                thieu_nguyen_lieu: d.thieu_nguyen_lieu,
+                can_serve: d.can_serve,
+                missing_ingredients: d.missing_ingredients,
             });
         });
         if (state.currentTab === 'menu') renderMenuTab();
@@ -397,16 +397,16 @@ async function runAvailabilityCheck() {
     }
 
     const items = Array.from(state.cart.entries()).map(([id, qty]) => ({
-        mon_an_id: id, so_luong: qty,
+        dish_id: id, quantity: qty,
     }));
 
     try {
         const result = await api.post('/api/menu/check-availability', { items });
         // Update map for cart items from server response
-        result.mon_an.forEach(r => {
-            state.availabilityMap.set(r.mon_an_id, {
-                co_the_phuc_vu: r.co_the_phuc_vu,
-                thieu_nguyen_lieu: r.thieu_nguyen_lieu,
+        result.dishes.forEach(r => {
+            state.availabilityMap.set(r.dish_id, {
+                can_serve: r.can_serve,
+                missing_ingredients: r.missing_ingredients,
             });
         });
     } catch (_) { /* silent fail */ }
@@ -435,29 +435,29 @@ async function loadOrderTab() {
     // Build order items list
     const orderItems = Array.from(state.cart.entries()).map(([id, qty]) => {
         const dish = state.dishes.find(d => d.id === id);
-        const avail = state.availabilityMap.get(id) || { co_the_phuc_vu: true };
+        const avail = state.availabilityMap.get(id) || { can_serve: true };
         return { dish, qty, avail };
     }).filter(x => x.dish);
 
-    const allAvailable = orderItems.every(x => x.avail.co_the_phuc_vu);
+    const allAvailable = orderItems.every(x => x.avail.can_serve);
     const total = cartTotal();
     const itemCount = cartCount();
 
     // Check cart availability fresh
     let cartCheck = null;
     try {
-        const items = Array.from(state.cart.entries()).map(([id, qty]) => ({ mon_an_id: id, so_luong: qty }));
+        const items = Array.from(state.cart.entries()).map(([id, qty]) => ({ dish_id: id, quantity: qty }));
         cartCheck = await api.post('/api/menu/check-availability', { items });
         // update map
-        cartCheck.mon_an.forEach(r => {
-            state.availabilityMap.set(r.mon_an_id, {
-                co_the_phuc_vu: r.co_the_phuc_vu,
-                thieu_nguyen_lieu: r.thieu_nguyen_lieu,
+        cartCheck.dishes.forEach(r => {
+            state.availabilityMap.set(r.dish_id, {
+                can_serve: r.can_serve,
+                missing_ingredients: r.missing_ingredients,
             });
         });
     } catch (_) { /* silent */ }
 
-    const canConfirm = cartCheck ? cartCheck.co_the_phuc_vu_tat_ca : allAvailable;
+    const canConfirm = cartCheck ? cartCheck.can_serve_all : allAvailable;
 
     c.innerHTML = `
         <div class="order-page">
@@ -486,14 +486,14 @@ async function loadOrderTab() {
 
 function renderAvailabilityCard(check) {
     if (!check) return '';
-    if (check.co_the_phuc_vu_tat_ca) {
+    if (check.can_serve_all) {
         return `<div class="availability-card availability-card--ok" style="margin:12px 16px 0">
                     <div class="availability-card__title">✓ Có thể phục vụ tất cả các món</div>
                     Kho bếp đủ nguyên liệu cho đơn hàng này.
                 </div>`;
     }
-    const missing = check.thieu_nguyen_lieu.map(t =>
-        `${escapeHtml(t.ten)}: thiếu ${formatNum(t.can_them)} ${escapeHtml(t.don_vi)}`
+    const missing = check.missing_ingredients.map(t =>
+        `${escapeHtml(t.name)}: thiếu ${formatNum(t.needed)} ${escapeHtml(t.unit)}`
     ).join(', ');
     return `<div class="availability-card availability-card--error" style="margin:12px 16px 0">
                 <div class="availability-card__title">✗ Không đủ nguyên liệu</div>
@@ -502,25 +502,25 @@ function renderAvailabilityCard(check) {
 }
 
 function renderOrderItem(dish, qty, avail) {
-    const unavail = !avail.co_the_phuc_vu;
+    const unavail = !avail.can_serve;
     return `
         <div class="order-item ${unavail ? 'order-item--unavailable' : ''}">
-            <div class="order-item__avatar ${avatarClass(dish.danh_muc_id)}">${catEmoji(dish.danh_muc_id)}</div>
+            <div class="order-item__avatar ${avatarClass(dish.category_id)}">${catEmoji(dish.category_id)}</div>
             <div class="order-item__info">
-                <div class="order-item__name">${escapeHtml(dish.ten_mon)}</div>
-                <div class="order-item__meta">${qty} × ${formatPrice(dish.gia)}
+                <div class="order-item__name">${escapeHtml(dish.name)}</div>
+                <div class="order-item__meta">${qty} × ${formatPrice(dish.price)}
                     ${unavail ? '<span style="color:var(--clr-error);margin-left:4px">• Hết NL</span>' : ''}
                 </div>
             </div>
-            <div class="order-item__price">${formatPrice(dish.gia * qty)}</div>
+            <div class="order-item__price">${formatPrice(dish.price * qty)}</div>
         </div>`;
 }
 
 function renderOrderTotal(items, total) {
     const rows = items.map(({ dish, qty }) =>
         `<div class="order-total__row">
-            <span class="order-total__label">${escapeHtml(dish.ten_mon)} ×${qty}</span>
-            <span class="order-total__value">${formatPrice(dish.gia * qty)}</span>
+            <span class="order-total__label">${escapeHtml(dish.name)} ×${qty}</span>
+            <span class="order-total__value">${formatPrice(dish.price * qty)}</span>
         </div>`
     ).join('');
     return `
@@ -585,12 +585,12 @@ function showConfirmSheet() {
 
         try {
             const items = Array.from(state.cart.entries()).map(([id, qty]) => ({
-                mon_an_id: id, so_luong: qty,
+                dish_id: id, quantity: qty,
             }));
             const result = await api.post('/api/orders', {
-                ma_ban: state.selectedTable,
+                table_number: state.selectedTable,
                 items,
-                ghi_chu: note || null,
+                notes: note || null,
             });
             closeBottomSheet(overlay);
             state.cart.clear();
@@ -599,8 +599,8 @@ function showConfirmSheet() {
             api.get('/api/menu/dishes').then(dishes => {
                 state.dishes = dishes;
                 dishes.forEach(d => state.availabilityMap.set(d.id, {
-                    co_the_phuc_vu: d.co_the_phuc_vu,
-                    thieu_nguyen_lieu: d.thieu_nguyen_lieu,
+                    can_serve: d.can_serve,
+                    missing_ingredients: d.missing_ingredients,
                 }));
             });
             updateCartBadge();
@@ -623,7 +623,7 @@ function showConfirmSheet() {
 
 function showOrderSuccess(order) {
     const c = getContent();
-    const tableStr = order.ma_ban ? `Bàn ${order.ma_ban}` : 'Chưa chọn bàn';
+    const tableStr = order.table_number ? `Bàn ${order.table_number}` : 'Chưa chọn bàn';
     c.innerHTML = `
         <div class="success-screen">
             <div class="success-icon">✓</div>
@@ -632,15 +632,15 @@ function showOrderSuccess(order) {
             <div class="success-order-id">Đơn #${order.id} · ${tableStr}</div>
 
             <div class="order-total" style="width:100%;max-width:340px;margin-top:8px">
-                ${order.chi_tiet.map(i => `
+                ${order.items.map(i => `
                     <div class="order-total__row">
-                        <span class="order-total__label">${escapeHtml(i.ten_mon)} ×${i.so_luong}</span>
-                        <span class="order-total__value">${formatPrice(i.thanh_tien)}</span>
+                        <span class="order-total__label">${escapeHtml(i.name)} ×${i.quantity}</span>
+                        <span class="order-total__value">${formatPrice(i.subtotal)}</span>
                     </div>
                 `).join('')}
                 <div class="order-total__row order-total__row--grand">
                     <span class="order-total__label">Tổng cộng</span>
-                    <span class="order-total__value">${formatPrice(order.tong_tien)}</span>
+                    <span class="order-total__value">${formatPrice(order.total_amount)}</span>
                 </div>
             </div>
 
@@ -671,7 +671,7 @@ async function loadInventoryTab() {
 }
 
 function renderInventoryTab(c, ingredients) {
-    const lowItems = ingredients.filter(i => i.canh_bao_thap).length;
+    const lowItems = ingredients.filter(i => i.low_stock_warning).length;
 
     c.innerHTML = `
         <div class="inventory-page">
@@ -710,33 +710,33 @@ function renderInventoryTab(c, ingredients) {
 }
 
 function renderIngredientCard(ing) {
-    const ratio = ing.nguong_canh_bao > 0 ? ing.so_luong_ton / ing.nguong_canh_bao : 999;
+    const ratio = ing.warning_threshold > 0 ? ing.stock_quantity / ing.warning_threshold : 999;
     let cardCls = 'ingredient-card';
     let warnHtml = '';
 
-    if (ing.so_luong_ton === 0) {
+    if (ing.stock_quantity === 0) {
         cardCls += ' ingredient-card--critical';
         warnHtml = `<span class="ingredient-warning ingredient-warning--critical">Hết</span>`;
-    } else if (ing.canh_bao_thap) {
+    } else if (ing.low_stock_warning) {
         cardCls += ' ingredient-card--low';
         warnHtml = `<span class="ingredient-warning ingredient-warning--low">Sắp hết</span>`;
     }
 
-    const stockColor = ing.so_luong_ton === 0
+    const stockColor = ing.stock_quantity === 0
         ? 'var(--clr-error)'
-        : ing.canh_bao_thap
+        : ing.low_stock_warning
         ? 'var(--clr-warning)'
         : 'var(--clr-success)';
 
     return `
         <div class="${cardCls}" data-id="${ing.id}">
-            <div class="ingredient-icon">${ingredientEmoji(ing.ten_nguyen_lieu)}</div>
+            <div class="ingredient-icon">${ingredientEmoji(ing.name)}</div>
             <div class="ingredient-info">
-                <div class="ingredient-name">${escapeHtml(ing.ten_nguyen_lieu)}</div>
+                <div class="ingredient-name">${escapeHtml(ing.name)}</div>
                 <div class="ingredient-stock">
-                    <span style="color:${stockColor}">${formatNum(ing.so_luong_ton)}</span>
-                    ${escapeHtml(ing.don_vi)}
-                    ${ing.nguong_canh_bao > 0 ? `<span style="color:var(--clr-text-3)"> / ngưỡng: ${formatNum(ing.nguong_canh_bao)}</span>` : ''}
+                    <span style="color:${stockColor}">${formatNum(ing.stock_quantity)}</span>
+                    ${escapeHtml(ing.unit)}
+                    ${ing.warning_threshold > 0 ? `<span style="color:var(--clr-text-3)"> / ngưỡng: ${formatNum(ing.warning_threshold)}</span>` : ''}
                 </div>
             </div>
             ${warnHtml}
@@ -754,21 +754,21 @@ function openEditIngredient(ing) {
         <h2 class="sheet-title">Cập nhật nguyên liệu</h2>
 
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;background:var(--clr-primary-bg);padding:12px;border-radius:var(--r-md)">
-            <span style="font-size:28px">${ingredientEmoji(ing.ten_nguyen_lieu)}</span>
+            <span style="font-size:28px">${ingredientEmoji(ing.name)}</span>
             <div>
-                <div style="font-size:16px;font-weight:700">${escapeHtml(ing.ten_nguyen_lieu)}</div>
-                <div style="font-size:13px;color:var(--clr-text-3)">Đơn vị: ${escapeHtml(ing.don_vi)}</div>
+                <div style="font-size:16px;font-weight:700">${escapeHtml(ing.name)}</div>
+                <div style="font-size:13px;color:var(--clr-text-3)">Đơn vị: ${escapeHtml(ing.unit)}</div>
             </div>
         </div>
 
         <div class="form-group">
-            <label class="form-label">Số lượng tồn kho (${escapeHtml(ing.don_vi)})</label>
-            <input class="form-input" type="number" id="stock-input" value="${ing.so_luong_ton}" min="0" step="0.1">
+            <label class="form-label">Số lượng tồn kho (${escapeHtml(ing.unit)})</label>
+            <input class="form-input" type="number" id="stock-input" value="${ing.stock_quantity}" min="0" step="0.1">
         </div>
 
         <div class="form-group">
-            <label class="form-label">Ngưỡng cảnh báo thấp (${escapeHtml(ing.don_vi)})</label>
-            <input class="form-input" type="number" id="threshold-input" value="${ing.nguong_canh_bao}" min="0" step="0.1">
+            <label class="form-label">Ngưỡng cảnh báo thấp (${escapeHtml(ing.unit)})</label>
+            <input class="form-input" type="number" id="threshold-input" value="${ing.warning_threshold}" min="0" step="0.1">
             <p class="form-hint">Sẽ cảnh báo khi tồn kho ≤ ngưỡng này</p>
         </div>
 
@@ -795,8 +795,8 @@ function openEditIngredient(ing) {
 
         try {
             await api.put(`/api/inventory/ingredients/${ing.id}`, {
-                so_luong_ton: qty,
-                nguong_canh_bao: isNaN(threshold) ? ing.nguong_canh_bao : threshold,
+                stock_quantity: qty,
+                warning_threshold: isNaN(threshold) ? ing.warning_threshold : threshold,
             });
             closeBottomSheet(overlay);
             loadInventoryTab();
@@ -804,8 +804,8 @@ function openEditIngredient(ing) {
             api.get('/api/menu/dishes').then(dishes => {
                 state.dishes = dishes;
                 dishes.forEach(d => state.availabilityMap.set(d.id, {
-                    co_the_phuc_vu: d.co_the_phuc_vu,
-                    thieu_nguyen_lieu: d.thieu_nguyen_lieu,
+                    can_serve: d.can_serve,
+                    missing_ingredients: d.missing_ingredients,
                 }));
             });
         } catch (err) {
@@ -868,10 +868,10 @@ function openAddIngredient() {
 
         try {
             await api.post('/api/inventory/ingredients', {
-                ten_nguyen_lieu: name,
-                don_vi: unit,
-                so_luong_ton: stock,
-                nguong_canh_bao: threshold,
+                name: name,
+                unit: unit,
+                stock_quantity: stock,
+                warning_threshold: threshold,
             });
             closeBottomSheet(overlay);
             loadInventoryTab();

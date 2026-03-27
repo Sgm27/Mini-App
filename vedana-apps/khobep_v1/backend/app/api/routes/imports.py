@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.models.kitchen import PhieuNhapKho
+from app.models.kitchen import ImportReceipt
 from app.schemas.kitchen import ImportRecordCreate, ImportRecordOut
 from app.services.inventory_service import build_import_out, create_import, get_imports
 
@@ -27,7 +27,7 @@ def list_imports(limit: int = 50, import_date: date | None = None, db: Session =
 
 @router.get("/{import_id}", response_model=ImportRecordOut)
 def get_import(import_id: int, db: Session = Depends(get_db)):
-    record = db.query(PhieuNhapKho).filter(PhieuNhapKho.id == import_id).first()
+    record = db.query(ImportReceipt).filter(ImportReceipt.id == import_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiếu nhập")
     return build_import_out(record)

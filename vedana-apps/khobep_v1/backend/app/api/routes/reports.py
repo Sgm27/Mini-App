@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.models.kitchen import MonAn, NguyenLieu, PhieuNhapKho
+from app.models.kitchen import Dish, Ingredient, ImportReceipt
 from app.schemas.kitchen import LowStockItem, ReportOverview
 from app.services.inventory_service import build_import_out, get_imports
 
@@ -13,16 +13,16 @@ router = APIRouter(prefix="/reports")
 
 @router.get("/overview", response_model=ReportOverview)
 def get_overview(db: Session = Depends(get_db)):
-    total_materials = db.query(NguyenLieu).count()
-    total_available = db.query(MonAn).filter(MonAn.active == True).count()  # noqa: E712
-    total_unavailable = db.query(MonAn).filter(MonAn.active == False).count()  # noqa: E712
+    total_materials = db.query(Ingredient).count()
+    total_available = db.query(Dish).filter(Dish.active == True).count()  # noqa: E712
+    total_unavailable = db.query(Dish).filter(Dish.active == False).count()  # noqa: E712
 
     low_stock = 0
     out_of_stock = 0
-    materials = db.query(NguyenLieu).all()
+    materials = db.query(Ingredient).all()
     for mat in materials:
-        qty = float(mat.so_luong_ton)
-        min_s = float(mat.nguong_canh_bao)
+        qty = float(mat.stock_quantity)
+        min_s = float(mat.warning_threshold)
         if qty <= 0:
             out_of_stock += 1
         elif min_s > 0 and qty < min_s:
@@ -31,9 +31,9 @@ def get_overview(db: Session = Depends(get_db)):
     today = date.today()
     today_start = datetime.combine(today, datetime.min.time())
     today_end = datetime.combine(today, datetime.max.time())
-    today_records = db.query(PhieuNhapKho).filter(
-        PhieuNhapKho.created_at >= today_start,
-        PhieuNhapKho.created_at <= today_end,
+    today_records = db.query(ImportReceipt).filter(
+        ImportReceipt.created_at >= today_start,
+        ImportReceipt.created_at <= today_end,
     ).all()
     today_items = sum(len(r.items) for r in today_records)
 
@@ -56,11 +56,11 @@ def get_history(limit: int = 20, import_date: date | None = None, db: Session = 
 
 @router.get("/low-stock", response_model=list[LowStockItem])
 def get_low_stock(db: Session = Depends(get_db)):
-    materials = db.query(NguyenLieu).all()
+    materials = db.query(Ingredient).all()
     result = []
     for mat in materials:
-        qty = float(mat.so_luong_ton)
-        min_s = float(mat.nguong_canh_bao)
+        qty = float(mat.stock_quantity)
+        min_s = float(mat.warning_threshold)
         if qty <= 0:
             status = "out"
         elif min_s > 0 and qty < min_s:
@@ -69,8 +69,8 @@ def get_low_stock(db: Session = Depends(get_db)):
             continue
         result.append(LowStockItem(
             material_id=mat.id,
-            material_name=mat.ten_nguyen_lieu,
-            unit=mat.don_vi,
+            material_name=mat.name,
+            unit=mat.unit,
             quantity=qty,
             min_stock=min_s,
             status=status,
