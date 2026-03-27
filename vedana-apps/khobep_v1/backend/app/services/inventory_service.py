@@ -79,26 +79,52 @@ def get_inventory(db: Session) -> list[InventoryOut]:
 # ─── Imports ─────────────────────────────────────────────────
 
 def create_import(db: Session, data: ImportRecordCreate) -> ImportReceipt:
+    # Parse receipt_date if provided (DD/MM/YYYY format)
+    parsed_date = None
+    if data.receipt_date:
+        try:
+            from datetime import datetime as dt
+            parsed_date = dt.strptime(data.receipt_date, "%d/%m/%Y")
+        except ValueError:
+            pass
+
     record = ImportReceipt(
-        supplier=data.supplier_name,
+        supplier=data.supplier_name or data.vendor_name,
         notes=data.notes,
         image_url=data.image_url,
         received_by=data.created_by,
+        receipt_date=parsed_date,
+        description=data.description,
+        vendor_name=data.vendor_name,
+        period=data.period,
+        voucher_no=data.voucher_no,
+        invoice_serial=data.invoice_serial,
+        invoice_no=data.invoice_no,
     )
     db.add(record)
     db.flush()
 
     for item_in in data.items:
+        # Skip items without material_id
+        if not item_in.material_id:
+            continue
+
         mat = db.query(Ingredient).filter(Ingredient.id == item_in.material_id).first()
         if not mat:
             continue
 
-        # Add import line item
+        # Add import line item with new fields
         import_item = ImportReceiptItem(
             import_receipt_id=record.id,
             ingredient_id=item_in.material_id,
             quantity=Decimal(str(item_in.quantity)),
             unit=item_in.unit,
+            item_code=item_in.item_code,
+            item_name=item_in.item_name,
+            unit_price=Decimal(str(item_in.unit_price)) if item_in.unit_price is not None else None,
+            amount=Decimal(str(item_in.amount)) if item_in.amount is not None else None,
+            location=item_in.location,
+            acc_no=item_in.acc_no,
         )
         db.add(import_item)
 
@@ -111,7 +137,7 @@ def create_import(db: Session, data: ImportRecordCreate) -> ImportReceipt:
         elif unit_lower == "ml" and mat_unit_lower in ("lít", "lit", "l"):
             qty = qty / 1000
 
-        # Atomic stock update — avoids TOCTOU race
+        # Atomic stock update
         db.execute(
             update(Ingredient)
             .where(Ingredient.id == item_in.material_id)
@@ -121,7 +147,6 @@ def create_import(db: Session, data: ImportRecordCreate) -> ImportReceipt:
     db.commit()
     db.refresh(record)
 
-    # Recalculate dish availability
     recalculate_all_dishes(db)
 
     return record
@@ -146,7 +171,18 @@ def build_import_out(record: ImportReceipt) -> ImportRecordOut:
             material_name=it.ingredient.name if it.ingredient else "?",
             quantity=float(it.quantity),
             unit=it.unit,
+            item_code=it.item_code,
+            item_name=it.item_name,
+            unit_price=float(it.unit_price) if it.unit_price is not None else None,
+            amount=float(it.amount) if it.amount is not None else None,
+            location=it.location,
+            acc_no=it.acc_no,
         ))
+
+    receipt_date_str = None
+    if record.receipt_date:
+        receipt_date_str = record.receipt_date.strftime("%d/%m/%Y")
+
     return ImportRecordOut(
         id=record.id,
         supplier_name=record.supplier,
@@ -154,6 +190,13 @@ def build_import_out(record: ImportReceipt) -> ImportRecordOut:
         image_url=record.image_url,
         created_by=record.received_by,
         created_at=record.created_at,
+        receipt_date=receipt_date_str,
+        description=record.description,
+        vendor_name=record.vendor_name,
+        period=record.period,
+        voucher_no=record.voucher_no,
+        invoice_serial=record.invoice_serial,
+        invoice_no=record.invoice_no,
         items=items_out,
     )
 
