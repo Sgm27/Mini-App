@@ -52,11 +52,17 @@ class InventoryOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ─── Import ──────────────────────────────────────────────────
+# ─── Import ──────────────────────────────────────
 class ImportItemIn(BaseModel):
-    material_id: int
+    material_id: int | None = None
     quantity: float = Field(..., gt=0)
     unit: str
+    item_code: str | None = None
+    item_name: str | None = None
+    unit_price: float | None = None
+    amount: float | None = None
+    location: str | None = None
+    acc_no: str | None = None
 
 
 class ImportItemOut(BaseModel):
@@ -65,6 +71,12 @@ class ImportItemOut(BaseModel):
     material_name: str
     quantity: float
     unit: str
+    item_code: str | None = None
+    item_name: str | None = None
+    unit_price: float | None = None
+    amount: float | None = None
+    location: str | None = None
+    acc_no: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -74,6 +86,14 @@ class ImportRecordCreate(BaseModel):
     notes: str | None = None
     image_url: str | None = None
     created_by: str = "Nhân viên kho"
+    # Vedana receiving note header
+    receipt_date: str | None = None
+    description: str | None = None
+    vendor_name: str | None = None
+    period: str | None = None
+    voucher_no: str | None = None
+    invoice_serial: str | None = None
+    invoice_no: str | None = None
     items: list[ImportItemIn]
 
 
@@ -84,6 +104,13 @@ class ImportRecordOut(BaseModel):
     image_url: str | None
     created_by: str
     created_at: datetime
+    receipt_date: str | None = None
+    description: str | None = None
+    vendor_name: str | None = None
+    period: str | None = None
+    voucher_no: str | None = None
+    invoice_serial: str | None = None
+    invoice_no: str | None = None
     items: list[ImportItemOut] = []
 
     model_config = {"from_attributes": True}
@@ -96,6 +123,8 @@ class ImportRecordSummary(BaseModel):
     created_at: datetime
     item_count: int
     total_items_summary: str
+    vendor_name: str | None = None
+    voucher_no: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -132,12 +161,42 @@ class DishStatusOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ─── OCR / Voice ─────────────────────────────────────────────
+# ─── OCR / Voice ─────────────────────────────────
 class ExtractedItem(BaseModel):
     name: str
     quantity: float
     unit: str
     material_id: int | None = None
+
+
+class ReceiptHeader(BaseModel):
+    receipt_date: str | None = None
+    description: str | None = None
+    vendor_name: str | None = None
+    period: str | None = None
+    voucher_no: str | None = None
+    invoice_serial: str | None = None
+    invoice_no: str | None = None
+
+
+class ReceiptItem(BaseModel):
+    item_code: str | None = None
+    name: str
+    unit: str
+    quantity: float
+    unit_price: float | None = None
+    amount: float | None = None
+    location: str | None = None
+    acc_no: str | None = None
+    material_id: int | None = None
+    is_new: bool = False
+
+
+class ReceiptSummary(BaseModel):
+    sub_amount: float | None = None
+    discount: float | None = None
+    vat: float | None = None
+    total_amount: float | None = None
 
 
 class OcrExtractRequest(BaseModel):
@@ -146,6 +205,12 @@ class OcrExtractRequest(BaseModel):
 
 class VoiceExtractRequest(BaseModel):
     transcript: str
+
+
+class OcrReceiptResponse(BaseModel):
+    header: ReceiptHeader
+    items: list[ReceiptItem]
+    summary: ReceiptSummary | None = None
 
 
 class ExtractResponse(BaseModel):
