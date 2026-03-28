@@ -36,6 +36,7 @@ class Settings(BaseSettings):
 
     anthropic_api_key: Annotated[str, Field(default="")]
     openai_api_key: Annotated[str, Field(default="")]
+    openai_model: Annotated[str, Field(default="gpt-4o")]
 
     @computed_field
     @property
