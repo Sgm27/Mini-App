@@ -4,15 +4,13 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.models.kitchen import Ingredient
 from app.schemas.kitchen import (
-    ExtractResponse,
     OcrExtractRequest,
     OcrReceiptResponse,
     ReceiptHeader,
     ReceiptItem,
     ReceiptSummary,
-    VoiceExtractRequest,
 )
-from app.services.ocr_service import extract_from_voice, extract_receipt_from_image
+from app.services.ocr_service import extract_receipt_from_image
 
 router = APIRouter(prefix="/ocr")
 
@@ -92,30 +90,3 @@ async def extract_from_invoice_image(data: OcrExtractRequest, db: Session = Depe
     )
 
 
-def _match_voice_materials(items, db: Session):
-    """Match voice-extracted items to known ingredients (no auto-create)."""
-    all_mats = db.query(Ingredient).all()
-    mat_map = {m.name.lower(): m for m in all_mats}
-
-    for item in items:
-        name_lower = item.name.lower()
-        if name_lower in mat_map:
-            item.material_id = mat_map[name_lower].id
-            item.unit = mat_map[name_lower].unit
-            continue
-        for mat_name, mat in mat_map.items():
-            if name_lower in mat_name or mat_name in name_lower:
-                item.material_id = mat.id
-                item.unit = mat.unit
-                break
-    return items
-
-
-@router.post("/voice", response_model=ExtractResponse)
-async def extract_from_voice_transcript(data: VoiceExtractRequest, db: Session = Depends(get_db)):
-    if not data.transcript.strip():
-        raise HTTPException(status_code=400, detail="Nội dung giọng nói trống")
-
-    items = await extract_from_voice(data.transcript)
-    items = _match_voice_materials(items, db)
-    return ExtractResponse(items=items, raw_text=data.transcript)

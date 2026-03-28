@@ -32,6 +32,7 @@ function icon(name, size = 20) {
     'upload': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
     'trending-down': '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>',
     'chevron-left': '<polyline points="15 18 9 12 15 6"/>',
+    'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
   };
   const sw = size <= 16 ? 2.5 : 2;
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${p[name] || ''}</svg>`;
@@ -46,7 +47,7 @@ function iconInline(name, size = 14, color = '') {
 const state = {
   currentTab: 'import',
   // Import screen
-  importMethod: null,    // 'camera' | 'voice'
+  importMethod: null,    // 'camera' | 'manual'
   reviewItems: [],       // [{name, quantity, unit, material_id, item_code, unit_price, amount, location, acc_no, is_new}]
   receiptHeader: null,   // {receipt_date, description, vendor_name, period, voucher_no, invoice_serial, invoice_no}
   receiptSummary: null,  // {sub_amount, discount, vat, total_amount}
@@ -87,6 +88,9 @@ function loadTab(tab) {
   document.getElementById('page-title').textContent = titles[tab] || tab;
   document.getElementById('page-subtitle').textContent = '';
   document.getElementById('top-bar-actions').innerHTML = '';
+  // Clean up detail page state
+  document.querySelector('.bottom-nav').style.display = '';
+  document.querySelectorAll('.import-detail-back').forEach(b => b.remove());
 
   switch (tab) {
     case 'import':    renderImportTab(); break;
@@ -116,7 +120,7 @@ function openBottomSheet(html) {
   const overlay = document.getElementById('sheet-overlay');
   overlay.hidden = false;
   overlay.innerHTML = `<div class="bottom-sheet"><div class="sheet-handle"></div>${html}</div>`;
-  overlay.addEventListener('click', e => { if (e.target === overlay) closeBottomSheet(); }, { once: true });
+  overlay.onclick = e => { if (e.target === overlay) closeBottomSheet(); };
   return overlay;
 }
 
@@ -204,24 +208,14 @@ function renderImportSelectPage() {
           <div class="method-card__desc">AI tự động nhận diện nguyên vật liệu</div>
         </button>
 
-        <button class="method-card" onclick="startVoiceInput()">
-          <div class="method-card__icon" style="background:#EEF2FF;color:#6366F1;">
-            ${icon('mic', 26)}
+        <button class="method-card" onclick="openManualAdd()">
+          <div class="method-card__icon" style="background:var(--success-bg);color:var(--success);">
+            ${icon('edit-3', 26)}
           </div>
-          <div class="method-card__title">Nhập Bằng Giọng Nói</div>
-          <div class="method-card__desc">Nói tên và số lượng nguyên liệu</div>
+          <div class="method-card__title">Nhập Thủ Công</div>
+          <div class="method-card__desc">Nhập đầy đủ thông tin phiếu nhập</div>
         </button>
       </div>
-
-      <button class="method-card method-card--wide" onclick="openManualAdd()">
-        <div class="method-card__icon method-card__icon--sm" style="background:var(--success-bg);color:var(--success);">
-          ${icon('edit-3', 22)}
-        </div>
-        <div style="text-align:left;">
-          <div class="method-card__title" style="margin-bottom:2px;">Nhập Thủ Công</div>
-          <div class="method-card__desc">Chọn nguyên vật liệu từ danh sách có sẵn</div>
-        </div>
-      </button>
 
     </div>
   `;
@@ -271,24 +265,30 @@ function renderImportReviewPage() {
 
   const content = document.getElementById('content');
   content.innerHTML = `
-    <div style="padding: var(--space-lg);">
+    <div class="review-page" style="padding: var(--space-lg);">
       <button class="back-link" onclick="backToImportSelect()">
         ${icon('chevron-left', 16)} Chọn phương thức khác
       </button>
 
       ${headerHtml}
 
-      <div style="background:var(--white); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-sm); margin-top:var(--space-md);">
+      <div class="review-items-section">
+        <div class="review-items-section__header">
+          <span class="review-items-section__title">${icon('package', 14)} Danh sách hàng</span>
+          <span class="review-items-section__count">${state.reviewItems.length} mặt hàng</span>
+        </div>
         <div id="review-list"></div>
       </div>
 
       ${summaryHtml}
 
-      <div class="form-group mt-lg">
-        <label class="form-label" for="supplier-input">Người bàn giao (tuỳ chọn)</label>
-        <input class="form-input" type="text" id="supplier-input" placeholder="Tên bộ phận thu mua / nhà cung cấp" value="${h && h.vendor_name ? escapeHtml(h.vendor_name) : ''}">
+      <div class="supplier-section">
+        <div class="form-group">
+          <label class="form-label" for="supplier-input">Người bàn giao (tuỳ chọn)</label>
+          <input class="form-input" type="text" id="supplier-input" placeholder="Tên nhân viên giao hàng">
+        </div>
       </div>
-      <button class="btn btn--primary btn--full btn--lg" id="btn-confirm" onclick="confirmImport()">
+      <button class="btn btn--full btn--lg btn--confirm" id="btn-confirm" onclick="confirmImport()" style="margin-top:var(--space-lg);">
         ${icon('check', 18)} Xác Nhận Nhập Kho
       </button>
     </div>
@@ -364,110 +364,81 @@ async function processOcrImage(dataUrl) {
   }
 }
 
-// ─── Voice Input ──────────────────────────────────
-function startVoiceInput() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    showToast('Trình duyệt không hỗ trợ giọng nói. Dùng Chrome hoặc nhập thủ công.', 'error');
-    return;
-  }
-
-  const overlay = openBottomSheet(`
-    <div class="text-center" style="padding: var(--space-xl) 0;">
-      <h2 style="font-size:var(--text-xl); font-weight:700; margin-bottom:var(--space-md);">Nhập Giọng Nói</h2>
-      <div class="voice-ring" id="voice-btn">${icon('mic', 32)}</div>
-      <p class="text-muted text-sm" id="voice-hint" style="margin-top:var(--space-lg); line-height:1.6;">
-        Nhấn vào nút micro để bắt đầu<br>
-        <span style="font-size:11px;">Ví dụ: "5 kg thịt bò, 3 lít nước mắm, 2 bó rau cải"</span>
-      </p>
-      <div class="voice-transcript mt-lg" id="voice-transcript" style="display:none;"></div>
-      <button class="btn btn--primary btn--full mt-lg" id="voice-submit" style="display:none;" onclick="submitVoiceTranscript()">
-        Xác nhận & Phân tích
-      </button>
-    </div>
-  `);
-
-  const recognition = new SpeechRecognition();
-  recognition.lang = 'vi-VN';
-  recognition.continuous = false;
-  recognition.interimResults = true;
-
-  let finalTranscript = '';
-  let isListening = false;
-
-  const voiceBtn = document.getElementById('voice-btn');
-  const voiceHint = document.getElementById('voice-hint');
-  const voiceTranscript = document.getElementById('voice-transcript');
-
-  voiceBtn.addEventListener('click', () => {
-    if (isListening) {
-      recognition.stop();
-      return;
-    }
-    isListening = true;
-    finalTranscript = '';
-    voiceBtn.classList.add('voice-ring--listening');
-    voiceHint.innerHTML = '<span class="rec-dot"></span> Đang nghe... Nói tên và số lượng nguyên liệu';
-    voiceTranscript.style.display = 'none';
-    recognition.start();
-  });
-
-  recognition.onresult = e => {
-    let interim = '';
-    finalTranscript = '';
-    for (let i = 0; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript + ' ';
-      else interim += e.results[i][0].transcript;
-    }
-    voiceTranscript.style.display = 'block';
-    voiceTranscript.textContent = finalTranscript || interim || '...';
-  };
-
-  recognition.onend = () => {
-    isListening = false;
-    voiceBtn.classList.remove('voice-ring--listening');
-    if (finalTranscript.trim()) {
-      voiceHint.innerHTML = `${iconInline('check-circle', 15, 'var(--success)')} Đã ghi âm xong. Nhấn Xác nhận để phân tích.`;
-      document.getElementById('voice-submit').style.display = 'flex';
-      document.getElementById('voice-submit').dataset.transcript = finalTranscript.trim();
-    } else {
-      voiceHint.innerHTML = 'Không nghe thấy gì. Nhấn nút để thử lại.<br><span style="font-size:11px;">Ví dụ: "5 kg thịt bò, 3 lít nước mắm"</span>';
-    }
-  };
-
-  recognition.onerror = () => {
-    isListening = false;
-    voiceBtn.classList.remove('voice-ring--listening');
-    voiceHint.textContent = 'Lỗi micro. Thử lại hoặc dùng nhập thủ công.';
-  };
-}
-
-async function submitVoiceTranscript() {
-  const btn = document.getElementById('voice-submit');
-  const transcript = btn.dataset.transcript;
-  closeBottomSheet();
-
-  // Show processing
-  showToast('Đang phân tích giọng nói...', 'success');
-
-  try {
-    const result = await api.post('/api/ocr/voice', { transcript });
-    state.reviewItems = result.items || [];
-    if (state.currentTab !== 'import') return;
-    if (state.reviewItems.length === 0) {
-      showToast('Không nhận diện được. Thêm thủ công.', 'error');
-    } else {
-      showToast(`Nhận diện được ${state.reviewItems.length} mặt hàng`, 'success');
-    }
-    renderImportReviewPage();
-  } catch (err) {
-    showToast('Lỗi phân tích: ' + err.message, 'error');
-    if (state.currentTab === 'import') renderImportReviewPage();
-  }
-}
-
 // ─── Manual Add ───────────────────────────────────
 function openManualAdd() {
+  // Show header info form first
+  const today = new Date();
+  const todayStr = today.toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric', timeZone:'Asia/Ho_Chi_Minh'});
+  const periodStr = today.toLocaleDateString('vi-VN', {year:'numeric', month:'2-digit', timeZone:'Asia/Ho_Chi_Minh'}).split('/').reverse().join('');
+
+  document.getElementById('page-title').textContent = 'Nhập Thủ Công';
+  document.getElementById('page-subtitle').textContent = '';
+  document.getElementById('top-bar-actions').innerHTML = '';
+
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div style="padding: var(--space-lg);">
+      <button class="back-link" onclick="backToImportSelect()">
+        ${icon('chevron-left', 16)} Chọn phương thức khác
+      </button>
+
+      <div class="receipt-header-card" style="margin-top:var(--space-md);">
+        <div class="receipt-header-card__title">${icon('clipboard', 16)} Thông tin phiếu nhập</div>
+        <div style="padding:var(--space-sm) var(--space-lg) var(--space-lg);">
+          <div class="form-group">
+            <label class="form-label">Ngày nhập</label>
+            <input class="form-input" type="text" id="manual-receipt-date" placeholder="DD/MM/YYYY" value="${todayStr}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nhà cung cấp</label>
+            <input class="form-input" type="text" id="manual-vendor" placeholder="Tên nhà cung cấp">
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-sm);">
+            <div class="form-group">
+              <label class="form-label">Số phiếu</label>
+              <input class="form-input" type="text" id="manual-voucher-no" placeholder="VD: NK001">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Kỳ KT</label>
+              <input class="form-input" type="text" id="manual-period" placeholder="YYYYMM" value="${periodStr}">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nội dung</label>
+            <input class="form-input" type="text" id="manual-description" placeholder="Nội dung phiếu nhập">
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-sm);">
+            <div class="form-group">
+              <label class="form-label">Seri HĐ</label>
+              <input class="form-input" type="text" id="manual-invoice-serial" placeholder="Seri hoá đơn">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Số HĐ</label>
+              <input class="form-input" type="text" id="manual-invoice-no" placeholder="Số hoá đơn">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn--primary btn--full btn--lg mt-lg" onclick="submitManualHeader()">
+        ${icon('check', 18)} Tiếp tục thêm hàng
+      </button>
+    </div>
+  `;
+}
+
+function submitManualHeader() {
+  state.receiptHeader = {
+    receipt_date: document.getElementById('manual-receipt-date')?.value.trim() || null,
+    vendor_name: document.getElementById('manual-vendor')?.value.trim() || null,
+    voucher_no: document.getElementById('manual-voucher-no')?.value.trim() || null,
+    period: document.getElementById('manual-period')?.value.trim() || null,
+    description: document.getElementById('manual-description')?.value.trim() || null,
+    invoice_serial: document.getElementById('manual-invoice-serial')?.value.trim() || null,
+    invoice_no: document.getElementById('manual-invoice-no')?.value.trim() || null,
+  };
+  state.receiptSummary = null;
+  state.importMethod = 'manual';
   renderImportReviewPage();
   setTimeout(() => openAddItem(), 200);
 }
@@ -534,9 +505,10 @@ function addCustomItem() {
 
 function openAddQtySheet(materialId, name, unit) {
   closeBottomSheet();
+  const isManual = state.importMethod === 'manual';
   const overlay = openBottomSheet(`
     <h2 style="font-size:var(--text-lg); font-weight:700; margin-bottom:4px;">${escapeHtml(name)}</h2>
-    <p class="text-muted text-sm mb-lg">Nhập số lượng nhận được</p>
+    <p class="text-muted text-sm mb-lg">Nhập chi tiết nguyên vật liệu</p>
 
     <div class="form-group">
       <label class="form-label">Số lượng</label>
@@ -555,9 +527,20 @@ function openAddQtySheet(materialId, name, unit) {
     </div>
 
     <!-- Quick qty buttons -->
-    <div class="chips-row" style="padding:0; margin-bottom:var(--space-lg);">
+    <div class="chips-row" style="padding:0; margin-bottom:var(--space-md);">
       ${['0.5','1','2','3','5','10','20'].map(v => `<button class="chip" onclick="setQty(${v})">${v}</button>`).join('')}
     </div>
+
+    ${isManual ? `
+    <div class="form-group">
+      <label class="form-label">Đơn giá (đ)</label>
+      <input class="form-input" type="number" id="price-input" placeholder="0" min="0" step="1000" oninput="calcAmount()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Thành tiền (đ)</label>
+      <input class="form-input" type="number" id="amount-input" placeholder="Tự tính theo SL × Đơn giá" min="0" readonly style="background:var(--bg);color:var(--text-muted);">
+    </div>
+    ` : ''}
 
     <button class="btn btn--primary btn--full" onclick="addReviewItem(${materialId}, '${escapeHtml(name).replace(/'/g,"\\'")}')">
       + Thêm vào danh sách
@@ -566,6 +549,11 @@ function openAddQtySheet(materialId, name, unit) {
 
   document.getElementById('qty-input').focus();
   document.getElementById('qty-input').select();
+
+  // Auto-calc amount when qty changes
+  if (isManual) {
+    document.getElementById('qty-input').addEventListener('input', calcAmount);
+  }
 }
 
 function stepQty(delta, unit) {
@@ -574,20 +562,47 @@ function stepQty(delta, unit) {
   const step = ['g','ml'].includes(unit) ? 50 : 0.5;
   val = Math.max(0.1, val + delta * step);
   input.value = val % 1 === 0 ? val.toFixed(0) : parseFloat(val.toFixed(1));
+  calcAmount();
 }
 
 function setQty(val) {
   const input = document.getElementById('qty-input');
   if (input) { input.value = val; input.focus(); }
+  calcAmount();
+}
+
+function calcAmount() {
+  const qty = parseFloat(document.getElementById('qty-input')?.value) || 0;
+  const price = parseFloat(document.getElementById('price-input')?.value) || 0;
+  const amountEl = document.getElementById('amount-input');
+  if (amountEl) {
+    amountEl.value = price > 0 ? Math.round(qty * price) : '';
+  }
 }
 
 function addReviewItem(materialId, name) {
   const qty = parseFloat(document.getElementById('qty-input')?.value) || 1;
   const unit = document.getElementById('unit-select')?.value || 'kg';
+  const unitPrice = parseFloat(document.getElementById('price-input')?.value) || null;
+  const amount = parseFloat(document.getElementById('amount-input')?.value) || null;
   closeBottomSheet();
-  state.reviewItems.push({ name, quantity: qty, unit, material_id: materialId });
+  state.reviewItems.push({
+    name, quantity: qty, unit, material_id: materialId,
+    unit_price: unitPrice, amount: amount,
+  });
+  recalcManualSummary();
   updateReviewList();
   showToast(`Đã thêm: ${name} (${qty} ${unit})`);
+}
+
+function recalcManualSummary() {
+  if (state.importMethod !== 'manual') return;
+  const totalAmount = state.reviewItems.reduce((sum, i) => sum + (i.amount || 0), 0);
+  if (totalAmount > 0) {
+    state.receiptSummary = { sub_amount: totalAmount, discount: 0, vat: 0, total_amount: totalAmount };
+  } else {
+    state.receiptSummary = null;
+  }
 }
 
 // ─── Review List ──────────────────────────────────
@@ -600,8 +615,12 @@ function updateReviewList() {
     subtitle.textContent = state.reviewItems.length > 0 ? `${state.reviewItems.length} mặt hàng` : '';
   }
 
+  // Update section count badge
+  const countBadge = document.querySelector('.review-items-section__count');
+  if (countBadge) countBadge.textContent = `${state.reviewItems.length} mặt hàng`;
+
   if (state.reviewItems.length === 0) {
-    listEl.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="empty-state__icon">${icon('shopping-cart', 36)}</div><p class="empty-state__text">Chưa có nguyên vật liệu nào.<br>Nhấn nút + ở góc phải để thêm.</p></div>`;
+    listEl.innerHTML = `<div class="empty-state" style="padding:32px;"><div class="empty-state__icon">${icon('shopping-cart', 36)}</div><p class="empty-state__text">Chưa có nguyên vật liệu nào.<br>Nhấn nút + ở góc phải để thêm.</p></div>`;
     return;
   }
 
@@ -610,31 +629,33 @@ function updateReviewList() {
       ? `<span class="badge badge--new">Mới</span>`
       : (!item.material_id ? ` ${iconInline('alert-triangle', 13, 'var(--warning)')}` : '');
     const priceInfo = item.unit_price != null
-      ? `<span class="text-xs text-muted">${Number(item.unit_price).toLocaleString('vi-VN')} đ/${item.unit}</span>`
+      ? `<span class="review-item__price">${Number(item.unit_price).toLocaleString('vi-VN')} đ/${item.unit}</span>`
       : '';
     const amountInfo = item.amount != null
-      ? `<span class="text-xs" style="color:var(--orange);font-weight:600;">${Number(item.amount).toLocaleString('vi-VN')} đ</span>`
+      ? `<span class="review-item__amount">${Number(item.amount).toLocaleString('vi-VN')} đ</span>`
       : '';
 
     return `
       <div class="review-item">
         <div class="review-item__num">${idx + 1}</div>
-        <div style="flex:1; min-width:0;">
+        <div class="review-item__body">
           <div class="review-item__name">
             ${escapeHtml(item.name)} ${badge}
           </div>
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            ${item.item_code ? `<span class="text-xs text-muted">Mã: ${escapeHtml(item.item_code)}</span>` : ''}
+          <div class="review-item__meta">
+            ${item.item_code ? `<span class="review-item__code">${escapeHtml(item.item_code)}</span>` : ''}
             ${priceInfo}
             ${amountInfo}
           </div>
         </div>
-        <div class="stepper">
-          <button class="stepper__btn" onclick="changeItemQty(${idx}, -0.5)">−</button>
-          <span class="stepper__value">${parseFloat(item.quantity).toFixed(item.quantity % 1 === 0 ? 0 : 1)} ${item.unit}</span>
-          <button class="stepper__btn" onclick="changeItemQty(${idx}, 0.5)">+</button>
+        <div class="review-item__actions">
+          <div class="stepper">
+            <button class="stepper__btn" onclick="changeItemQty(${idx}, -0.5)">−</button>
+            <span class="stepper__value">${parseFloat(item.quantity).toFixed(item.quantity % 1 === 0 ? 0 : 1)} ${item.unit}</span>
+            <button class="stepper__btn" onclick="changeItemQty(${idx}, 0.5)">+</button>
+          </div>
+          <button class="review-item__delete" onclick="removeReviewItem(${idx})">${icon('x', 14)}</button>
         </div>
-        <button class="review-item__delete" onclick="removeReviewItem(${idx})">${icon('x', 14)}</button>
       </div>
     `;
   }).join('');
@@ -644,12 +665,51 @@ function changeItemQty(idx, delta) {
   const item = state.reviewItems[idx];
   if (!item) return;
   item.quantity = Math.max(0.1, parseFloat(item.quantity) + delta);
+  // Recalculate amount if unit_price exists
+  if (item.unit_price) {
+    item.amount = Math.round(item.quantity * item.unit_price);
+  }
+  recalcManualSummary();
   updateReviewList();
+  // Re-render summary in DOM if manual
+  if (state.importMethod === 'manual') rerenderSummaryCard();
 }
 
 function removeReviewItem(idx) {
   state.reviewItems.splice(idx, 1);
+  recalcManualSummary();
   updateReviewList();
+  if (state.importMethod === 'manual') rerenderSummaryCard();
+}
+
+function rerenderSummaryCard() {
+  const existing = document.querySelector('.receipt-summary-card');
+  const s = state.receiptSummary;
+  if (s && s.total_amount > 0) {
+    const html = `
+      <div class="receipt-summary-card">
+        <div class="receipt-summary-row">
+          <span>Thành tiền</span>
+          <span>${s.sub_amount != null ? Number(s.sub_amount).toLocaleString('vi-VN') + ' đ' : '-'}</span>
+        </div>
+        ${s.discount ? `<div class="receipt-summary-row"><span>Giảm giá</span><span>${Number(s.discount).toLocaleString('vi-VN')} đ</span></div>` : ''}
+        ${s.vat ? `<div class="receipt-summary-row"><span>Thuế GTGT</span><span>${Number(s.vat).toLocaleString('vi-VN')} đ</span></div>` : ''}
+        <div class="receipt-summary-row receipt-summary-row--total">
+          <span>Tổng cộng</span>
+          <span>${s.total_amount != null ? Number(s.total_amount).toLocaleString('vi-VN') + ' đ' : '-'}</span>
+        </div>
+      </div>
+    `;
+    if (existing) {
+      existing.outerHTML = html;
+    } else {
+      // Insert before the supplier section
+      const formGroup = document.querySelector('#content .supplier-section');
+      if (formGroup) formGroup.insertAdjacentHTML('beforebegin', html);
+    }
+  } else if (existing) {
+    existing.remove();
+  }
 }
 
 // ─── Confirm Import ───────────────────────────────
@@ -672,7 +732,7 @@ async function confirmImport() {
   try {
     await api.post('/api/imports', {
       supplier_name: supplier || null,
-      created_by: 'Nhân viên kho',
+      created_by: supplier || 'Nhân viên kho',
       // Header fields from OCR
       receipt_date: h?.receipt_date || null,
       description: h?.description || null,
@@ -1041,17 +1101,16 @@ function renderReports(overview, history, lowStock) {
     ${history.length === 0
       ? `<div style="padding:var(--space-lg); text-align:center; color:var(--text-muted); font-size:var(--text-sm);">Chưa có lịch sử nhập kho</div>`
       : history.map(rec => `
-        <div class="import-card" onclick="showImportDetail(${rec.id})">
-          <div class="import-card__header">
-            <div>
-              <div class="import-card__supplier">${escapeHtml(rec.supplier_name || 'Không rõ')}</div>
-              <div style="font-size:var(--text-xs); color:var(--text-muted);">bởi ${escapeHtml(rec.created_by)}</div>
+        <div class="import-card" onclick="showImportDetail(${rec.id})" style="cursor:pointer;">
+          <div class="import-card__header" style="margin-bottom:0;">
+            <div style="flex:1; min-width:0;">
+              <div class="import-card__supplier">${escapeHtml(rec.vendor_name || rec.description || rec.voucher_no || 'Phiếu nhập kho')}</div>
+              <div style="font-size:var(--text-xs); color:var(--text-muted); margin-top:2px;">${rec.items?.length || rec.item_count || 0} mặt hàng${rec.created_by && rec.created_by !== 'Nhân viên kho' ? ' • bởi ' + escapeHtml(rec.created_by) : ''}</div>
             </div>
-            <div class="import-card__time">${formatTime(rec.created_at)}</div>
-          </div>
-          <div class="import-card__tags">
-            ${rec.items.slice(0,5).map(it => `<span class="import-card__tag">${escapeHtml(it.material_name)} ${it.quantity}${it.unit}</span>`).join('')}
-            ${rec.items.length > 5 ? `<span class="import-card__tag">+${rec.items.length - 5} mặt hàng</span>` : ''}
+            <div style="text-align:right; flex-shrink:0;">
+              <div class="import-card__time">${formatTime(rec.created_at)}</div>
+              <div style="font-size:var(--text-xs); color:var(--text-muted); margin-top:4px;">${iconInline('chevron-right', 14, 'var(--text-muted)')}</div>
+            </div>
           </div>
         </div>
       `).join('')
@@ -1061,32 +1120,116 @@ function renderReports(overview, history, lowStock) {
   `;
 }
 
+function formatMoney(val) {
+  if (val == null) return '—';
+  return Number(val).toLocaleString('vi-VN');
+}
+
 function showImportDetail(importId) {
   const rec = state.historyData.find(r => r.id === importId);
-  if (!rec) return;
+  if (!rec) { _fetchAndShowImportDetail(importId); return; }
+  _renderImportDetailPage(rec);
+}
 
-  openBottomSheet(`
-    <div style="margin-bottom:var(--space-lg);">
-      <h2 style="font-size:var(--text-lg); font-weight:700;">Phiếu nhập kho #${rec.id}</h2>
-      <p class="text-muted text-sm">${formatTime(rec.created_at)} • ${escapeHtml(rec.created_by)}</p>
-      ${rec.supplier_name ? `<p class="text-sm mt-sm" style="display:flex;align-items:center;gap:4px;">${iconInline('user', 14, 'var(--text-muted)')} ${escapeHtml(rec.supplier_name)}</p>` : ''}
+function showImportDetailInline(rec) {
+  closeBottomSheet();
+  if (!state.historyData) state.historyData = [];
+  if (!state.historyData.find(r => r.id === rec.id)) state.historyData.push(rec);
+  _renderImportDetailPage(rec);
+}
+
+async function _fetchAndShowImportDetail(importId) {
+  const content = document.getElementById('content');
+  showLoading(content);
+  try {
+    const rec = await api.get(`/api/imports/${importId}`);
+    if (!state.historyData) state.historyData = [];
+    state.historyData.push(rec);
+    _renderImportDetailPage(rec);
+  } catch (err) { showError(content, err.message); }
+}
+
+function _renderImportDetailPage(rec) {
+  const content = document.getElementById('content');
+  const bottomNav = document.querySelector('.bottom-nav');
+  bottomNav.style.display = 'none';
+
+  document.getElementById('page-title').textContent = `Phiếu #${rec.voucher_no || rec.id}`;
+  document.getElementById('page-subtitle').textContent = '';
+  document.getElementById('top-bar-actions').innerHTML = '';
+
+  // Back button in top-bar left
+  const topBarLeft = document.querySelector('.top-bar__left');
+  const backBtn = document.createElement('button');
+  backBtn.className = 'import-detail-back';
+  backBtn.style.cssText = 'background:none;border:none;padding:4px;margin-right:4px;cursor:pointer;color:var(--orange);display:flex;align-items:center;';
+  backBtn.innerHTML = icon('chevron-left', 22);
+  backBtn.onclick = () => {
+    backBtn.remove();
+    bottomNav.style.display = '';
+    loadTab('reports');
+  };
+  topBarLeft.prepend(backBtn);
+
+  const hasPrice = rec.items.some(it => it.unit_price != null);
+  const totalAmount = rec.items.reduce((s, it) => s + (it.amount || 0), 0);
+
+  // Build meta pills (only non-empty fields)
+  const pills = [
+    rec.receipt_date ? rec.receipt_date : null,
+    rec.period ? `Kỳ ${rec.period}` : null,
+    rec.created_by,
+  ].filter(Boolean);
+
+  const invoicePills = [
+    rec.invoice_serial ? `Seri ${rec.invoice_serial}` : null,
+    rec.invoice_no ? `HĐ #${rec.invoice_no}` : null,
+  ].filter(Boolean);
+
+  const supplier = rec.vendor_name || rec.supplier_name;
+
+  content.innerHTML = `
+    <!-- Header -->
+    <div style="padding:var(--space-lg) var(--space-lg) 0;">
+      ${supplier ? `<div style="font-size:var(--text-base); font-weight:700; color:var(--text); margin-bottom:4px;">${escapeHtml(supplier)}</div>` : ''}
+      ${rec.description ? `<div style="font-size:var(--text-sm); color:var(--text-muted); margin-bottom:var(--space-sm);">${escapeHtml(rec.description)}</div>` : ''}
+      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:var(--space-sm);">
+        ${pills.map(p => `<span style="font-size:var(--text-xs); color:var(--text-muted); background:var(--bg); padding:3px 8px; border-radius:var(--radius-full);">${escapeHtml(p)}</span>`).join('')}
+        ${invoicePills.map(p => `<span style="font-size:var(--text-xs); color:var(--orange-dark); background:var(--orange-pale); padding:3px 8px; border-radius:var(--radius-full);">${escapeHtml(p)}</span>`).join('')}
+      </div>
     </div>
-    <div style="background:var(--bg); border-radius:var(--radius-md); overflow:hidden;">
-      ${rec.items.map((it, i) => `
-        <div class="mat-item" style="${i===0?'border-top:none':''}">
-          <div class="review-item__num">${i+1}</div>
-          <div class="mat-item__info">
-            <div class="mat-item__name">${escapeHtml(it.material_name)}</div>
+
+    <!-- Total banner (if has price) -->
+    ${hasPrice ? `
+      <div style="margin:0 var(--space-lg) var(--space-md); background:var(--orange); border-radius:var(--radius-lg); padding:var(--space-md) var(--space-lg); display:flex; justify-content:space-between; align-items:center;">
+        <span style="color:rgba(255,255,255,0.85); font-size:var(--text-sm);">Tổng cộng</span>
+        <span style="color:white; font-size:var(--text-xl); font-weight:800; letter-spacing:-0.3px;">${formatMoney(totalAmount)}đ</span>
+      </div>
+    ` : ''}
+
+    <!-- Items -->
+    <div style="padding:0 var(--space-lg);">
+      <div style="background:var(--surface); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow-sm); border:1px solid var(--border-light);">
+        ${rec.items.map((it, i) => `
+          <div style="padding:var(--space-md) var(--space-lg); ${i > 0 ? 'border-top:1px solid var(--border-light);' : ''}">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="flex:1; min-width:0;">
+                <div style="font-weight:600; font-size:var(--text-sm);">${escapeHtml(it.item_name || it.material_name)}</div>
+                ${it.item_code ? `<div style="font-size:11px; color:var(--text-muted); margin-top:1px;">${escapeHtml(it.item_code)}</div>` : ''}
+              </div>
+              <div style="text-align:right; flex-shrink:0; margin-left:var(--space-md);">
+                <div style="font-weight:700; color:var(--orange); font-size:var(--text-sm);">${it.quantity} ${escapeHtml(it.unit)}</div>
+                ${hasPrice && it.amount != null ? `<div style="font-size:11px; color:var(--text-muted);">${formatMoney(it.amount)}đ</div>` : ''}
+              </div>
+            </div>
           </div>
-          <div class="mat-item__qty">
-            <div class="mat-item__qty-val">${it.quantity}</div>
-            <div class="mat-item__qty-unit">${it.unit}</div>
-          </div>
-        </div>
-      `).join('')}
+        `).join('')}
+      </div>
     </div>
-    ${rec.notes ? `<p class="text-sm text-muted mt-lg">Ghi chú: ${escapeHtml(rec.notes)}</p>` : ''}
-  `);
+
+    ${rec.notes ? `<div style="padding:var(--space-md) var(--space-lg); font-size:var(--text-sm); color:var(--text-muted);">${escapeHtml(rec.notes)}</div>` : ''}
+    <div style="height:var(--space-xl);"></div>
+  `;
 }
 
 async function loadFullHistory() {
@@ -1104,17 +1247,16 @@ async function loadFullHistory() {
       return;
     }
     histEl.innerHTML = data.map(rec => `
-      <div class="import-card" style="margin:0 0 var(--space-md);" onclick="showImportDetailInline(${JSON.stringify(rec).replace(/"/g,'&quot;')})">
-        <div class="import-card__header">
-          <div>
-            <div class="import-card__supplier">${escapeHtml(rec.supplier_name || 'Không rõ')}</div>
-            <div style="font-size:var(--text-xs); color:var(--text-muted);">${escapeHtml(rec.created_by)}</div>
+      <div class="import-card" style="margin:0 0 var(--space-md); cursor:pointer;" onclick="showImportDetailInline(${JSON.stringify(rec).replace(/"/g,'&quot;')})">
+        <div class="import-card__header" style="margin-bottom:0;">
+          <div style="flex:1; min-width:0;">
+            <div class="import-card__supplier">${escapeHtml(rec.vendor_name || rec.description || rec.voucher_no || 'Phiếu nhập kho')}</div>
+            <div style="font-size:var(--text-xs); color:var(--text-muted); margin-top:2px;">${rec.items?.length || rec.item_count || 0} mặt hàng${rec.created_by && rec.created_by !== 'Nhân viên kho' ? ' • bởi ' + escapeHtml(rec.created_by) : ''}</div>
           </div>
-          <div class="import-card__time">${formatTime(rec.created_at)}</div>
-        </div>
-        <div class="import-card__tags">
-          ${rec.items.slice(0,4).map(it => `<span class="import-card__tag">${escapeHtml(it.material_name)} ${it.quantity}${it.unit}</span>`).join('')}
-          ${rec.items.length > 4 ? `<span class="import-card__tag">+${rec.items.length-4}</span>` : ''}
+          <div style="text-align:right; flex-shrink:0;">
+            <div class="import-card__time">${formatTime(rec.created_at)}</div>
+            <div style="font-size:var(--text-xs); color:var(--text-muted); margin-top:4px;">${iconInline('chevron-right', 14, 'var(--text-muted)')}</div>
+          </div>
         </div>
       </div>
     `).join('');
