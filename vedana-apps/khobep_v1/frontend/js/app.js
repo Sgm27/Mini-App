@@ -62,6 +62,9 @@ const state = {
   reportData: null,
   historyData: [],
   lowStockData: [],
+  // Orders (kitchen workflow)
+  ordersData: [],
+  orderFilter: 'pending',   // 'pending'|'confirmed'|'completed'|'rejected'
 };
 
 const UNITS = ['kg', 'g', 'lít', 'ml', 'cái', 'hộp', 'bao', 'bó', 'quả', 'túi', 'lon', 'chai', 'thùng'];
@@ -84,7 +87,7 @@ function initBottomNav() {
 
 function loadTab(tab) {
   state.currentTab = tab;
-  const titles = { import: 'Nhập Kho', inventory: 'Tồn Kho', reports: 'Báo Cáo' };
+  const titles = { import: 'Nhập Kho', inventory: 'Tồn Kho', reports: 'Báo Cáo', orders: 'Đơn Bếp' };
   document.getElementById('page-title').textContent = titles[tab] || tab;
   document.getElementById('page-subtitle').textContent = '';
   document.getElementById('top-bar-actions').innerHTML = '';
@@ -96,6 +99,7 @@ function loadTab(tab) {
     case 'import':    renderImportTab(); break;
     case 'inventory': renderInventoryTab(); break;
     case 'reports':   renderReportsTab(); break;
+    case 'orders':    renderOrdersTab(); break;
   }
 }
 
@@ -121,6 +125,7 @@ function openBottomSheet(html) {
   overlay.hidden = false;
   overlay.innerHTML = `<div class="bottom-sheet"><div class="sheet-handle"></div>${html}</div>`;
   overlay.onclick = e => { if (e.target === overlay) closeBottomSheet(); };
+  document.body.classList.add('sheet-open');
   return overlay;
 }
 
@@ -128,6 +133,7 @@ function closeBottomSheet() {
   const overlay = document.getElementById('sheet-overlay');
   overlay.hidden = true;
   overlay.innerHTML = '';
+  document.body.classList.remove('sheet-open');
 }
 
 // ─── Helpers ─────────────────────────────────────
@@ -1264,4 +1270,181 @@ async function loadFullHistory() {
     const histEl = document.getElementById('history-content');
     if (histEl) histEl.innerHTML = `<p class="text-danger text-sm text-center">${escapeHtml(err.message)}</p>`;
   }
+}
+
+// ─── Orders Tab (Đơn Bếp) ──────────────────────
+async function renderOrdersTab() {
+  const content = document.getElementById('content');
+  content.innerHTML = `<div style="display:flex;justify-content:center;padding:40px 0"><div class="spinner"></div></div>`;
+
+  try {
+    const orders = await api.get('/api/orders', { status: state.orderFilter });
+    state.ordersData = orders;
+    renderOrdersList(orders);
+  } catch (err) {
+    content.innerHTML = `<div class="empty-state"><p>${err.message}</p><button class="btn btn--primary" onclick="renderOrdersTab()">Thử lại</button></div>`;
+  }
+}
+
+function renderOrdersList(orders) {
+  const content = document.getElementById('content');
+  const filters = [
+    { key: 'pending',   label: 'Chờ xử lý' },
+    { key: 'confirmed', label: 'Đang nấu' },
+    { key: 'completed', label: 'Hoàn thành' },
+    { key: 'rejected',  label: 'Từ chối' },
+  ];
+
+  content.innerHTML = `
+    <div class="orders-page">
+      <div class="order-filters">
+        ${filters.map(f => `
+          <button class="order-filter-btn ${state.orderFilter === f.key ? 'order-filter-btn--active' : ''}"
+                  data-filter="${f.key}">${f.label}</button>
+        `).join('')}
+      </div>
+      <div class="orders-list">
+        ${orders.length === 0
+          ? `<div class="empty-state">
+               <span style="font-size:40px">${icon('clipboard', 40)}</span>
+               <p style="color:var(--text-muted);margin-top:12px">Không có đơn nào</p>
+             </div>`
+          : orders.map(o => renderOrderCard(o)).join('')
+        }
+      </div>
+    </div>`;
+
+  // Filter buttons
+  content.querySelectorAll('.order-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.orderFilter = btn.dataset.filter;
+      renderOrdersTab();
+    });
+  });
+
+  // Action buttons
+  content.querySelectorAll('.order-confirm-btn').forEach(btn => {
+    btn.addEventListener('click', () => confirmOrderAction(parseInt(btn.dataset.id)));
+  });
+  content.querySelectorAll('.order-complete-btn').forEach(btn => {
+    btn.addEventListener('click', () => completeOrderAction(parseInt(btn.dataset.id)));
+  });
+  content.querySelectorAll('.order-reject-btn').forEach(btn => {
+    btn.addEventListener('click', () => openRejectSheet(parseInt(btn.dataset.id)));
+  });
+}
+
+function renderOrderCard(o) {
+  const time = new Date(o.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+  const statusMap = {
+    pending:   { label: 'Chờ xử lý', cls: 'order-status--pending' },
+    confirmed: { label: 'Đang nấu',  cls: 'order-status--confirmed' },
+    completed: { label: 'Hoàn thành', cls: 'order-status--completed' },
+    rejected:  { label: 'Từ chối',   cls: 'order-status--rejected' },
+  };
+  const st = statusMap[o.status] || { label: o.status, cls: '' };
+
+  let actions = '';
+  if (o.status === 'pending') {
+    actions = `
+      <div class="order-actions">
+        <button class="btn btn--danger-outline order-reject-btn" data-id="${o.id}">Từ chối</button>
+        <button class="btn btn--primary order-confirm-btn" data-id="${o.id}">Xác nhận</button>
+      </div>`;
+  } else if (o.status === 'confirmed') {
+    actions = `
+      <div class="order-actions">
+        <button class="btn btn--success order-complete-btn" data-id="${o.id}">Hoàn thành</button>
+      </div>`;
+  }
+
+  return `
+    <div class="order-card order-card--${o.status}">
+      <div class="order-card__header">
+        <div>
+          <span class="order-card__id">Đơn #${o.id}</span>
+          ${o.table_number ? `<span class="order-card__table">Bàn ${o.table_number}</span>` : ''}
+        </div>
+        <div style="text-align:right">
+          <span class="order-status ${st.cls}">${st.label}</span>
+          <div class="order-card__time">${time}</div>
+        </div>
+      </div>
+      <div class="order-card__items">
+        ${o.items.map(i => `
+          <div class="order-card__item">
+            <span>${i.dish_name} <span style="color:var(--text-muted)">×${i.quantity}</span></span>
+            <span>${Number(i.subtotal).toLocaleString('vi-VN')}đ</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="order-card__footer">
+        <span class="order-card__total">Tổng: ${Number(o.total_amount).toLocaleString('vi-VN')}đ</span>
+        ${o.notes ? `<div class="order-card__notes">${iconInline('edit-3', 12)} ${o.notes}</div>` : ''}
+        ${o.reject_reason ? `<div class="order-card__reject-reason">Lý do: ${o.reject_reason}</div>` : ''}
+      </div>
+      ${actions}
+    </div>`;
+}
+
+async function confirmOrderAction(orderId) {
+  try {
+    await api.put(`/api/orders/${orderId}/confirm`);
+    renderOrdersTab();
+  } catch (err) {
+    alert('Lỗi: ' + err.message);
+  }
+}
+
+async function completeOrderAction(orderId) {
+  try {
+    await api.put(`/api/orders/${orderId}/complete`);
+    renderOrdersTab();
+  } catch (err) {
+    alert('Lỗi: ' + err.message);
+  }
+}
+
+function openRejectSheet(orderId) {
+  const overlay = document.getElementById('sheet-overlay');
+  overlay.hidden = false;
+  overlay.innerHTML = `
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <h3 style="font-size:var(--text-lg);font-weight:700;margin-bottom:16px">Từ chối đơn #${orderId}</h3>
+      <div class="form-group">
+        <label class="form-label">Lý do từ chối</label>
+        <textarea class="form-input" id="reject-reason" rows="3" placeholder="VD: Bếp quá tải, thiết bị hỏng..."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn--secondary" id="reject-cancel" style="flex:1">Hủy</button>
+        <button class="btn btn--danger" id="reject-submit" style="flex:2">Xác nhận từ chối</button>
+      </div>
+    </div>`;
+
+  overlay.querySelector('#reject-cancel').addEventListener('click', () => {
+    overlay.hidden = true;
+    overlay.innerHTML = '';
+  });
+
+  overlay.querySelector('#reject-submit').addEventListener('click', async () => {
+    const reason = overlay.querySelector('#reject-reason').value.trim();
+    if (!reason) {
+      overlay.querySelector('#reject-reason').focus();
+      return;
+    }
+    const btn = overlay.querySelector('#reject-submit');
+    btn.disabled = true;
+    btn.textContent = 'Đang xử lý...';
+    try {
+      await api.put(`/api/orders/${orderId}/reject`, { reject_reason: reason });
+      overlay.hidden = true;
+      overlay.innerHTML = '';
+      renderOrdersTab();
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Xác nhận từ chối';
+      alert('Lỗi: ' + err.message);
+    }
+  });
 }
