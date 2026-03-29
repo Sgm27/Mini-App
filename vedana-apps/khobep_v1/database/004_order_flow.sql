@@ -15,5 +15,5 @@ ALTER TABLE orders
 UPDATE orders SET status = 'rejected' WHERE status = 'cancelled';
 
 -- Track migration
-INSERT INTO schema_migrations (version, name, applied_at)
-VALUES (4, '004_order_flow', NOW());
+INSERT INTO schema_migrations (version, applied_at)
+VALUES ('004_order_flow', NOW());
