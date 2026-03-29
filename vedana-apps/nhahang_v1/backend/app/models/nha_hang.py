@@ -80,10 +80,13 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     table_number = Column(String(50), nullable=True)
     status = Column(
-        Enum("pending", "confirmed", "cancelled"), default="pending"
+        Enum("pending", "confirmed", "completed", "rejected"), default="pending"
     )
     total_amount = Column(Numeric(10, 0), default=0)
     notes = Column(Text, nullable=True)
+    reject_reason = Column(Text, nullable=True)
+    confirmed_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

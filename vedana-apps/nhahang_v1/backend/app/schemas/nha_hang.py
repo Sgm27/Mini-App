@@ -112,6 +112,9 @@ class OrderOut(BaseModel):
     status: str
     total_amount: float
     notes: Optional[str] = None
+    reject_reason: Optional[str] = None
+    confirmed_at: Optional[str] = None
+    completed_at: Optional[str] = None
     items: List[OrderItemOut] = []
     created_at: str
 

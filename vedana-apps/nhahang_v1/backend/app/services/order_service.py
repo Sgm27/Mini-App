@@ -2,7 +2,7 @@ from fastapi import HTTPException
 
 from sqlalchemy.orm import Session
 
-from app.models.nha_hang import OrderItem, Recipe, Order, Dish, Ingredient
+from app.models.nha_hang import OrderItem, Order, Dish
 from app.schemas.nha_hang import CreateOrderRequest, OrderOut, OrderItemOut
 from app.services.menu_service import check_cart_availability
 
@@ -37,10 +37,10 @@ def create_order(db: Session, data: CreateOrderRequest) -> OrderOut:
             }
         )
 
-    # 3. Persist order
+    # 3. Persist order with status=pending (kitchen will confirm)
     order = Order(
         table_number=data.table_number,
-        status="confirmed",
+        status="pending",
         total_amount=total,
         notes=data.notes,
     )
@@ -57,24 +57,7 @@ def create_order(db: Session, data: CreateOrderRequest) -> OrderOut:
             )
         )
 
-    # 4. Deduct inventory
-    ingredient_needs: dict[int, float] = {}
-    for item in data.items:
-        recipes = (
-            db.query(Recipe)
-            .filter(Recipe.dish_id == item.dish_id)
-            .all()
-        )
-        for r in recipes:
-            ingredient_needs[r.ingredient_id] = (
-                ingredient_needs.get(r.ingredient_id, 0.0)
-                + float(r.required_quantity) * item.quantity
-            )
-
-    for ing_id, needed in ingredient_needs.items():
-        ing = db.query(Ingredient).filter(Ingredient.id == ing_id).first()
-        if ing:
-            ing.stock_quantity = max(0.0, float(ing.stock_quantity) - needed)
+    # NOTE: No inventory deduction here — khobep deducts on completion
 
     db.commit()
     db.refresh(order)
@@ -85,6 +68,9 @@ def create_order(db: Session, data: CreateOrderRequest) -> OrderOut:
         status=order.status,
         total_amount=float(order.total_amount),
         notes=order.notes,
+        reject_reason=order.reject_reason,
+        confirmed_at=order.confirmed_at.isoformat() if order.confirmed_at else None,
+        completed_at=order.completed_at.isoformat() if order.completed_at else None,
         items=[
             OrderItemOut(**{k: v for k, v in oi.items()}) for oi in order_items
         ],
@@ -120,6 +106,9 @@ def get_orders(db: Session, limit: int = 20) -> list[OrderOut]:
                 status=o.status,
                 total_amount=float(o.total_amount),
                 notes=o.notes,
+                reject_reason=o.reject_reason,
+                confirmed_at=o.confirmed_at.isoformat() if o.confirmed_at else None,
+                completed_at=o.completed_at.isoformat() if o.completed_at else None,
                 items=items,
                 created_at=o.created_at.isoformat(),
             )
