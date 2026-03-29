@@ -1,6 +1,6 @@
 from fastapi import APIRouter, FastAPI
 
-from app.api.routes import dishes, health, imports, inventory, materials, ocr, reports, upload
+from app.api.routes import dishes, health, imports, inventory, materials, ocr, orders, reports, upload
 
 
 def register_routes(app: FastAPI) -> None:
@@ -13,4 +13,5 @@ def register_routes(app: FastAPI) -> None:
     api_router.include_router(dishes.router, tags=["dishes"])
     api_router.include_router(ocr.router, tags=["ocr"])
     api_router.include_router(reports.router, tags=["reports"])
+    api_router.include_router(orders.router, tags=["orders"])
     app.include_router(api_router)
