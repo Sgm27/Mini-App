@@ -218,6 +218,36 @@ class ExtractResponse(BaseModel):
     raw_text: str | None = None
 
 
+# ─── Orders (kitchen workflow) ──────────────────────────────
+class OrderItemOut(BaseModel):
+    dish_id: int
+    dish_name: str
+    quantity: int
+    unit_price: float
+    subtotal: float
+
+    model_config = {"from_attributes": True}
+
+
+class OrderOut(BaseModel):
+    id: int
+    table_number: str | None = None
+    status: str
+    total_amount: float
+    notes: str | None = None
+    reject_reason: str | None = None
+    items: list[OrderItemOut] = []
+    created_at: datetime
+    confirmed_at: datetime | None = None
+    completed_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class RejectOrderRequest(BaseModel):
+    reject_reason: str
+
+
 # ─── Reports ─────────────────────────────────────────────────
 class ReportOverview(BaseModel):
     total_materials: int

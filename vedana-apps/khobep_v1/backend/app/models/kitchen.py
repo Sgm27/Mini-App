@@ -113,3 +113,35 @@ class ImportReceiptItem(Base):
 
     import_receipt: Mapped["ImportReceipt"] = relationship("ImportReceipt", back_populates="items")
     ingredient: Mapped["Ingredient"] = relationship("Ingredient", back_populates="import_items")
+
+
+class Order(Base):
+    """Orders — created by nhahang, managed by khobep."""
+    __tablename__ = "orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    table_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 0), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reject_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    items: Mapped[list["OrderItem"]] = relationship("OrderItem", back_populates="order")
+
+
+class OrderItem(Base):
+    """Order line items — created by nhahang."""
+    __tablename__ = "order_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    order_id: Mapped[int] = mapped_column(Integer, ForeignKey("orders.id"), nullable=False)
+    dish_id: Mapped[int] = mapped_column(Integer, ForeignKey("dishes.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(10, 0), nullable=False)
+
+    order: Mapped["Order"] = relationship("Order", back_populates="items")
+    dish: Mapped["Dish"] = relationship("Dish")
