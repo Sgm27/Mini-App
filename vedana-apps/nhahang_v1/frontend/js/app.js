@@ -16,6 +16,22 @@ const state = {
     currentTab: 'menu',
 };
 
+// ── Order Status Badge ────────────────────────────────────────
+function orderStatusBadge(status, rejectReason) {
+    const map = {
+        pending:   { label: 'Chờ bếp',    cls: 'badge--warning' },
+        confirmed: { label: 'Đang nấu',   cls: 'badge--info' },
+        completed: { label: 'Hoàn thành', cls: 'badge--success' },
+        rejected:  { label: 'Từ chối',    cls: 'badge--error' },
+    };
+    const s = map[status] || { label: status, cls: '' };
+    let html = `<span class="order-badge ${s.cls}">${s.label}</span>`;
+    if (status === 'rejected' && rejectReason) {
+        html += `<div class="reject-reason">${escapeHtml(rejectReason)}</div>`;
+    }
+    return html;
+}
+
 // ── Init ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     initBottomNav();
@@ -628,8 +644,9 @@ function showOrderSuccess(order) {
         <div class="success-screen">
             <div class="success-icon">✓</div>
             <div class="success-title">Đặt món thành công!</div>
-            <div class="success-subtitle">Đơn hàng đã được xác nhận<br>và kho bếp đã được cập nhật.</div>
+            <div class="success-subtitle">Đơn hàng đã được gửi đến bếp<br>và đang chờ xác nhận.</div>
             <div class="success-order-id">Đơn #${order.id} · ${tableStr}</div>
+            ${orderStatusBadge(order.status, order.reject_reason)}
 
             <div class="order-total" style="width:100%;max-width:340px;margin-top:8px">
                 ${order.items.map(i => `
